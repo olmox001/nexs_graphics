@@ -296,7 +296,7 @@ static int macos_poll_input(GHalInputEvent *event) {
 
 /* ── Driver registration ─────────────────────────────────────── */
 
-static GHalDriver s_macos_driver = {
+GHalDriver s_macos_driver = {
     .name             = "metal",
     .init             = macos_init,
     .shutdown         = macos_shutdown,

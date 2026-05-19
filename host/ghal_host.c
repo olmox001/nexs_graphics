@@ -20,6 +20,12 @@
 /* Singleton — set by platform backend constructor */
 GHalDriver *g_ghal_driver = NULL;
 
+#ifdef __APPLE__
+extern GHalDriver s_macos_driver;
+#elif !defined(NEXS_BAREMETAL)
+extern GHalDriver s_x11_driver;
+#endif
+
 /* Shared compositor state (hosted: single process) */
 static GCompositor s_compositor;
 static int         s_compositor_ready = 0;
@@ -27,6 +33,14 @@ static int         s_compositor_ready = 0;
 /* ── ghal_init ──────────────────────────────────────────────── */
 
 int ghal_init(void) {
+    if (!g_ghal_driver) {
+#ifdef __APPLE__
+        g_ghal_driver = &s_macos_driver;
+#elif !defined(NEXS_BAREMETAL)
+        g_ghal_driver = &s_x11_driver;
+#endif
+    }
+
     if (!g_ghal_driver) {
         fprintf(stderr, "GHAL: no driver registered\n");
         return -1;

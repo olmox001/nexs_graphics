@@ -229,7 +229,7 @@ static int x11_poll_input(GHalInputEvent *event) {
 
 /* ── Driver registration ─────────────────────────────────────── */
 
-static GHalDriver s_x11_driver = {
+GHalDriver s_x11_driver = {
     .name             = "x11-egl",
     .init             = x11_init,
     .shutdown         = x11_shutdown,
