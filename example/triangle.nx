@@ -1,0 +1,25 @@
+# triangle.nx — Vector rasterization demo
+# Draws a triangle using lines from the draw2d API.
+
+win = win_open("Triangle Demo" 640 480)
+if win < 0 { out "error"; halt }
+
+draw_clear(win 0x111111FF)
+
+# Triangle vertices (centered)
+x0 = 320  y0 = 80    # top
+x1 = 120  y1 = 400   # bottom-left
+x2 = 520  y2 = 400   # bottom-right
+
+# We don't have a direct draw_line builtin yet (Phase 5 stub)
+# Use draw_rect as 1px lines approximation
+draw_rect(win x0 y0 1 320 0xFF0000FF)   # left edge approximation
+draw_rect(win x1 y1 400 1 0x00FF00FF)   # base
+draw_rect(win x2 y0 1 320 0x0000FFFF)   # right edge approximation
+
+draw_text(win 260 440 "Triangle" 0xFFFFFFFF)
+surface_blit(win)
+
+i = 0
+while i < 120 { vsync(); i = i + 1 }
+win_close(win)

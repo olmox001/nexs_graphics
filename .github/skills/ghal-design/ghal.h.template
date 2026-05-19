@@ -1,0 +1,153 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * include/ghal.h — Graphics Hardware Abstraction Layer
+ * 
+ * Unified graphics interface spanning Host (macOS/Linux), Baremetal,
+ * and seL4 protection domains. Follows NEXS HAL patterns.
+ *
+ * Key structures:
+ *   - GHalSurface: Framebuffer/texture handle with pixel/GPU backing
+ *   - GHalWindow: Window handle with title, size, registry path
+ *   - GHalDriver: Platform-specific driver (singleton, registered at init)
+ *
+ * Registry paths (/dev/win/, /dev/gfx/) expose all graphics resources
+ * in the NEXS registry for cross-process access via IPC.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+#ifndef GHAL_H
+#define GHAL_H
+#pragma once
+
+#include "nexs/hal/include/nexs_hal.h"   /* HalDriver pattern, NEXS_API */
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+/* ───────────────────────────────────────────────────────────────────────
+ * Pixel Format Constants
+ * ─────────────────────────────────────────────────────────────────────── */
+
+#define GHAL_FMT_RGBA8      0   /* R8 G8 B8 A8, linear */
+#define GHAL_FMT_BGRA8      1   /* B8 G8 R8 A8, native on some systems */
+#define GHAL_FMT_RGB565     2   /* R5 G6 B5, packed 16-bit */
+#define GHAL_FMT_XRGB8      3   /* X8 R8 G8 B8 (opaque) */
+
+/* Macro: pack color to RGBA8 (most common) */
+#define GHAL_RGBA(r, g, b, a) \
+    (((uint32_t)(r) << 24) | ((uint32_t)(g) << 16) | \
+     ((uint32_t)(b) << 8) | (a))
+
+/* ───────────────────────────────────────────────────────────────────────
+ * GHalSurface — Framebuffer/Texture Handle
+ * ─────────────────────────────────────────────────────────────────────── */
+
+typedef struct {
+    uint32_t    id;              /* Unique surface ID */
+    uint32_t    width, height;   /* Dimensions in pixels */
+    uint32_t    stride;          /* Bytes per row (may include padding) */
+    uint32_t    format;          /* GHAL_FMT_* */
+    
+    void       *pixels;          /* CPU-accessible pixel data (or NULL if GPU-only) */
+    size_t      pixel_size;      /* Total allocated size */
+    
+    uintptr_t   gpu_handle;      /* Opaque GPU resource handle (backend-specific) */
+    bool        gpu_dirty;       /* Flag: CPU modified, GPU needs update */
+} GHalSurface;
+
+/* ───────────────────────────────────────────────────────────────────────
+ * GHalWindow — Window Handle
+ * ─────────────────────────────────────────────────────────────────────── */
+
+typedef struct {
+    uint32_t      id;             /* Unique window ID */
+    char          title[128];     /* Window title string */
+    uint32_t      width, height;  /* Window size in pixels */
+    
+    GHalSurface  *surface;        /* Associated drawing surface */
+    
+    bool          visible;        /* Window visibility state */
+    uint32_t      zorder;         /* Stack position (0=bottom, higher=top) */
+    
+    char          reg_path[64];   /* Registry path: /dev/win/<id> */
+    uintptr_t     native_handle;  /* Native window handle (platform-specific) */
+} GHalWindow;
+
+/* ───────────────────────────────────────────────────────────────────────
+ * GHalDriver — Backend Driver Interface (Singleton Pattern)
+ * 
+ * Each platform provides a single GHalDriver instance, registered via
+ * __attribute__((constructor)) at module load time. Functions may be NULL
+ * if unsupported on that platform (e.g., win_open is NULL on baremetal).
+ * ─────────────────────────────────────────────────────────────────────── */
+
+typedef struct {
+    const char *name;   /* "metal", "x11-egl", "virtio-gpu", "softpipe" */
+    
+    /* ─ Lifecycle ─ */
+    int  (*init)(void);
+    void (*shutdown)(void);
+    
+    /* ─ Display Query ─ */
+    void (*get_display_size)(uint32_t *width, uint32_t *height);
+    uint32_t (*preferred_format)(void);
+    
+    /* ─ Window Management (Host only; NULL on baremetal) ─ */
+    int  (*win_open)(GHalWindow *w);
+    void (*win_close)(GHalWindow *w);
+    void (*win_set_title)(GHalWindow *w, const char *title);
+    void (*win_resize)(GHalWindow *w, uint32_t new_width, uint32_t new_height);
+    
+    /* ─ Surface Management ─ */
+    int  (*surface_create)(GHalSurface *s, uint32_t w, uint32_t h, uint32_t fmt);
+    void (*surface_destroy)(GHalSurface *s);
+    int  (*surface_lock)(GHalSurface *s);      /* Acquire CPU access */
+    void (*surface_unlock)(GHalSurface *s);    /* Release CPU access */
+    void (*surface_present)(GHalWindow *w, GHalSurface *s);  /* Flip/blit to screen */
+    
+    /* ─ GPU Command Submission (NULL if no GPU) ─ */
+    int  (*gpu_begin_frame)(GHalWindow *w);
+    void (*gpu_submit)(const void *cmdbuf, size_t len);
+    void (*gpu_end_frame)(GHalWindow *w);
+    
+    /* ─ Synchronization ─ */
+    void (*vsync)(void);   /* Wait for vertical blanking interval */
+    
+} GHalDriver;
+
+/* Global singleton driver, registered by platform-specific module */
+extern GHalDriver *g_ghal_driver;
+
+/* ───────────────────────────────────────────────────────────────────────
+ * Public HAL Interface
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* Initialize graphics subsystem (auto-detects backend from environment) */
+NEXS_API int ghal_init(void);
+
+/* Shut down graphics subsystem */
+NEXS_API void ghal_shutdown(void);
+
+/* Query display size */
+NEXS_API void ghal_get_display_size(uint32_t *width, uint32_t *height);
+
+/* Window operations */
+NEXS_API int ghal_win_open(GHalWindow *w, const char *title,
+                            uint32_t width, uint32_t height);
+NEXS_API void ghal_win_close(GHalWindow *w);
+NEXS_API void ghal_win_set_title(GHalWindow *w, const char *title);
+NEXS_API void ghal_win_resize(GHalWindow *w, uint32_t width, uint32_t height);
+
+/* Surface operations */
+NEXS_API int ghal_surface_create(GHalSurface *s, uint32_t w, uint32_t h,
+                                  uint32_t fmt);
+NEXS_API void ghal_surface_destroy(GHalSurface *s);
+NEXS_API int ghal_surface_lock(GHalSurface *s);
+NEXS_API void ghal_surface_unlock(GHalSurface *s);
+NEXS_API void ghal_surface_present(GHalWindow *w, GHalSurface *s);
+
+/* GPU operations */
+NEXS_API int ghal_gpu_begin_frame(GHalWindow *w);
+NEXS_API void ghal_gpu_submit(const void *cmdbuf, size_t len);
+NEXS_API void ghal_gpu_end_frame(GHalWindow *w);
+NEXS_API void ghal_vsync(void);
+
+#endif  /* GHAL_H */

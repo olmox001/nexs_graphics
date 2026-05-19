@@ -1,0 +1,4 @@
+[submodule "base-nexs"]
+	path = base-nexs
+	url = https://github.com/olmox001/base-nexs.git
+	branch = dev-stable
