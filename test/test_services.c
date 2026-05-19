@@ -13,7 +13,9 @@
 
 /* Pull in service headers — they transitively include ghal.h with the
  * NEXS_HAL_H guard so no nexs runtime is needed. */
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 
 #include "../include/ghal_image.h"
 #include "../include/ghal_font_ttf.h"

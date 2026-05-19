@@ -1,0 +1,192 @@
+# demo_animated.nx — Animated compositor HUD
+#
+# Mostra: fn per layout, loop infinito con stato, if/else, str() concat,
+# window multi-panel, barre animate, colori dinamici via funzioni.
+
+# ──────────────────────────────────────────────────────────
+# Utility
+# ──────────────────────────────────────────────────────────
+
+fn clamp(v lo hi) {
+    if v < lo { ret lo }
+    if v > hi { ret hi }
+    ret v
+}
+
+fn sin_approx(t) {
+    # Approssimazione triangolare di sin: periodo 256
+    phase = t % 256
+    if phase < 0 { phase = phase + 256 }
+    if phase < 128 {
+        ret phase * 2 - 128
+    }
+    ret 383 - phase * 2
+}
+
+fn hue_shift(frame channel) {
+    offset = channel * 85
+    v = sin_approx(frame + offset)
+    v = v + 128
+    v = clamp(v 0 255)
+    ret v
+}
+
+# Costruisce un colore BGRA da tre canali calcolati dinamicamente
+fn dynamic_color(frame) {
+    r = hue_shift(frame 0)
+    g = hue_shift(frame 1)
+    b = hue_shift(frame 2)
+    ret r * 0x1000000 + g * 0x10000 + b * 0x100 + 0xFF
+}
+
+fn draw_panel(win x y w h title col_border col_bg) {
+    draw_rect(win x y w h col_border)
+    draw_rect(win x + 2 y + 2 w - 4 h - 4 col_bg)
+    draw_text(win x + 8 y + 8 title 0xCCCCCCFF)
+}
+
+fn draw_progress(win x y w h val max_v col) {
+    fill = clamp(w * val / max_v 0 w)
+    draw_rect(win x y w h 0x111122FF)
+    draw_rect(win x y fill h col)
+}
+
+fn draw_sparkline(win x y len frame col) {
+    # Disegna una linea pulsante usando sin_approx
+    i = 0
+    loop {
+        if i >= len { break }
+        ht = sin_approx(frame + i * 3)
+        ht = ht / 4 + 16
+        ht = clamp(ht 2 30)
+        draw_rect(win x + i y + 32 - ht 1 ht col)
+        i = i + 1
+    }
+}
+
+# ──────────────────────────────────────────────────────────
+# Finestra principale
+# ──────────────────────────────────────────────────────────
+
+win = win_open("NEXS Animated HUD" 960 600)
+if win < 0 {
+    out "ERROR: window failed"
+    ret
+}
+
+frame  = 0
+cpu    = 0
+mem    = 60
+net_in = 0
+
+loop {
+    draw_clear(win 0x0A0A1AFF)
+
+    # ── Title bar ──────────────────────────────────────────
+    draw_rect(win 0 0 960 44 0x111130FF)
+    draw_text(win 16 12 "NEXS SYSTEM MONITOR  v1.0" 0xFFFFFFFF)
+    draw_text(win 760 12 "frame=" + str(frame) 0x888888FF)
+
+    # ── Colore dinamico frame-dipendente ───────────────────
+    dyn = dynamic_color(frame)
+
+    # ── Panel sinistro: CPU ────────────────────────────────
+    draw_panel(win 16 56 288 240 "CPU USAGE" dyn 0x111128FF)
+
+    cpu = sin_approx(frame) + 128
+    cpu = clamp(cpu 5 99)
+
+    draw_progress(win 28 86 264 18 cpu 100 0x00FF88FF)
+    draw_text(win 28 112 "load: " + str(cpu) + "%" 0x00FF88FF)
+
+    cpu2 = sin_approx(frame + 40) + 128
+    cpu2 = clamp(cpu2 5 99)
+    draw_progress(win 28 136 264 18 cpu2 100 0x44AAFFFF)
+    draw_text(win 28 162 "core1: " + str(cpu2) + "%" 0x44AAFFFF)
+
+    cpu3 = sin_approx(frame + 80) + 128
+    cpu3 = clamp(cpu3 5 99)
+    draw_progress(win 28 186 264 18 cpu3 100 0xFF8844FF)
+    draw_text(win 28 212 "core2: " + str(cpu3) + "%" 0xFF8844FF)
+
+    draw_text(win 28 240 "arch: x86_64  nexs-rt" 0x555577FF)
+
+    # ── Panel centrale: MEM ────────────────────────────────
+    draw_panel(win 320 56 288 240 "MEMORY" 0x4444FFFF 0x111128FF)
+
+    mem_v = sin_approx(frame + 64) + 128
+    mem_v = clamp(mem_v 20 90)
+
+    draw_progress(win 332 86 264 18 mem_v 100 0x8844FFFF)
+    draw_text(win 332 112 "used: " + str(mem_v) + "%" 0x8844FFFF)
+
+    swap_v = sin_approx(frame + 128) + 128
+    swap_v = swap_v / 4
+    swap_v = clamp(swap_v 0 30)
+    draw_progress(win 332 136 264 18 swap_v 100 0xFF4488FF)
+    draw_text(win 332 162 "swap: " + str(swap_v) + "%" 0xFF4488FF)
+
+    draw_text(win 332 200 "total: 16384 MB" 0x555577FF)
+    draw_text(win 332 224 "avail: " + str(16384 - mem_v * 164) + " MB" 0x555577FF)
+
+    # ── Panel destro: NETWORK ──────────────────────────────
+    draw_panel(win 624 56 320 240 "NETWORK" 0x00FFFFFF 0x111128FF)
+
+    net_in = sin_approx(frame + 32) + 128
+    net_in = clamp(net_in 0 255)
+    net_out = sin_approx(frame + 160) + 128
+    net_out = clamp(net_out 0 255)
+
+    draw_progress(win 636 86 296 14 net_in 255 0x00FFFFFF)
+    draw_text(win 636 106 "RX: " + str(net_in) + " KB/s" 0x00FFFFFF)
+
+    draw_progress(win 636 128 296 14 net_out 255 0xFF8800FF)
+    draw_text(win 636 148 "TX: " + str(net_out) + " KB/s" 0xFF8800FF)
+
+    draw_text(win 636 180 "iface: eth0   NEXS-VFS" 0x555577FF)
+    draw_text(win 636 204 "pkts: " + str(frame * 7 % 9999) 0x555577FF)
+
+    # ── Sparklines ────────────────────────────────────────
+    draw_rect(win 16 308 928 80 0x0E0E22FF)
+    draw_text(win 24 316 "CPU HISTORY" 0x888888FF)
+    draw_sparkline(win 24 316 460 frame 0x00FF88FF)
+
+    draw_text(win 500 316 "NET HISTORY" 0x888888FF)
+    draw_sparkline(win 508 316 428 frame + 128 0x00FFFFFF)
+
+    # ── Log panel ─────────────────────────────────────────
+    draw_rect(win 16 400 928 160 0x0C0C20FF)
+    draw_text(win 24 408 "SYSTEM LOG" 0x888888FF)
+
+    log_idx = frame % 6
+    msg0 = "nexs.compositor: vsync ok"
+    msg1 = "nexs.registry: /dev/gfx healthy"
+    msg2 = "nexs.runtime: frame loop active"
+    msg3 = "nexs.ipc: 0 pending messages"
+    msg4 = "nexs.vm: bytecode interpreter idle"
+    msg5 = "nexs.hal: Metal driver responding"
+
+    draw_text(win 24 430 msg0 0x444466FF)
+    draw_text(win 24 452 msg1 0x444466FF)
+    draw_text(win 24 474 msg2 0x444466FF)
+    draw_text(win 24 496 msg3 0x444466FF)
+    draw_text(win 24 518 msg4 0x444466FF)
+    draw_text(win 24 540 msg5 0x666688FF)
+
+    # Highlight riga corrente
+    row_y = 430 + log_idx * 22
+    draw_rect(win 16 row_y 928 20 0x1A1A3AFF)
+
+    # ── Status bar ────────────────────────────────────────
+    draw_rect(win 0 576 960 24 0x111130FF)
+    draw_text(win 16 580 "NEXS fn/loop/if/&&/||/!/str()" 0x00FF88FF)
+    draw_text(win 460 580 "dynamic_color / sin_approx / clamp" 0xFFFFFFFF)
+    draw_text(win 840 580 "LIVE" 0xFF4444FF)
+
+    surface_blit(win)
+    vsync()
+    frame = frame + 1
+}
+
+win_close(win)
+out "demo_animated done"

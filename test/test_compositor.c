@@ -10,7 +10,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 
 /* Stub GHalDriver / GHalSurface / GHalWindow inline */
 typedef unsigned long uintptr_t;
@@ -114,6 +116,11 @@ static int g_present_calls = 0;
 static char g_reg_entries[64][2][256];
 static int  g_reg_count = 0;
 
+/* Minimal Value stub — compositor only checks .type == TYPE_STR */
+#define TYPE_NIL 0
+#define TYPE_STR 5
+typedef struct { int type; void *data; } Value;
+
 /* Registry stubs */
 static int reg_set_impl(const char *path) {
     if (g_reg_count < 64)
@@ -121,10 +128,17 @@ static int reg_set_impl(const char *path) {
     return 0;
 }
 int reg_delete(const char *path) { (void)path; return 0; }
+Value reg_get(const char *path) { (void)path; Value v = {TYPE_NIL, NULL}; return v; }
+void val_free(Value *v) { (void)v; }
 void winreg_set_int(const char *p, int val) { (void)val; reg_set_impl(p); }
 void winreg_set_str(const char *p, const char *s) { (void)s; reg_set_impl(p); }
 void gcomp_publish_registry(GHalWindow *w) { (void)w; }
 void gcomp_update_registry(GHalWindow *w) { (void)w; }
+
+/* Surface + layout stubs needed by gcomp_tick */
+int  ghal_surface_lock(GHalSurface *s)   { (void)s; return 0; }
+void ghal_surface_unlock(GHalSurface *s) { (void)s; }
+void ghal_layout_render(GHalWindow *w)   { (void)w; }
 
 static int stub_win_open(GHalWindow *w) { (void)w; g_win_open_calls++; return 0; }
 static void stub_win_close(GHalWindow *w) { (void)w; g_win_close_calls++; }

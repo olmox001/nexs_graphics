@@ -1,0 +1,153 @@
+# demo_functions.nx — Showcase di fn, ret, if/else, &&, ||, !, true/false
+#
+# Dimostra le capacita' complete del parser NEXS:
+#   - fn con parametri e ret
+#   - if / else if / else con espressioni arbitrarie
+#   - && || ! (e forme keyword: and or not)
+#   - true / false come bool reali
+#   - loop / break
+#   - str() per string concat
+#   - precedenza operatori corretta
+
+# ──────────────────────────────────────────────
+# Funzioni di utilita'
+# ──────────────────────────────────────────────
+
+fn clamp(v lo hi) {
+    if v < lo { ret lo }
+    if v > hi { ret hi }
+    ret v
+}
+
+fn abs_val(v) {
+    if v < 0 { ret v * -1 }
+    ret v
+}
+
+# Ritorna il colore BGRA corrispondente a un livello 0-255
+fn level_color(lv) {
+    if lv < 64  { ret 0x0044FFFF }
+    if lv < 128 { ret 0x00FF88FF }
+    if lv < 192 { ret 0xFFAA00FF }
+    ret 0xFF2244FF
+}
+
+fn draw_hud_row(win y label value color) {
+    draw_rect(win 40 y 720 22 0x1A1A2EFF)
+    draw_text(win 50 y + 4 label 0xAAAAAAFF)
+    draw_text(win 380 y + 4 value color)
+}
+
+fn draw_bar(win x y w h val max_val fg_color) {
+    filled = w * val / max_val
+    filled = clamp(filled 0 w)
+    draw_rect(win x y w h 0x222244FF)
+    draw_rect(win x y filled h fg_color)
+}
+
+# ──────────────────────────────────────────────
+# Setup finestra
+# ──────────────────────────────────────────────
+
+win = win_open("NEXS Functions Demo" 800 540)
+if win < 0 {
+    out "ERROR: window failed to open"
+    ret
+}
+
+frame  = 0
+tick   = 0
+rising = true
+
+loop {
+    if frame >= 3600 { break }
+
+    draw_clear(win 0x0D0D1AFF)
+
+    # Header
+    draw_rect(win 0 0 800 50 0x111130FF)
+    draw_text(win 20 14 "NEXS fn / if-else / && || ! / true false" 0xFFFFFFFF)
+    draw_text(win 600 14 "f=" + str(frame) 0x888888FF)
+
+    # Oscillatore: tick va da 0 a 255 e torna (usa rising come bool)
+    if rising {
+        tick = tick + 2
+        if tick >= 255 { rising = false }
+    }
+    if !rising {
+        tick = tick - 2
+        if tick <= 0 { rising = true }
+    }
+
+    # Colore dinamico basato su tick
+    dyn_color = level_color(tick)
+
+    # Sezione "Logic"
+    draw_rect(win 20 70 760 120 0x131320FF)
+    draw_text(win 30 78 "Logic gates (&&  ||  !  and  or  not)" 0x00FFFFFF)
+
+    a = frame % 60 < 30
+    b = frame % 90 < 45
+
+    and_res = a && b
+    or_res  = a || b
+    not_a   = !a
+
+    and_label = "false"
+    if and_res { and_label = "true" }
+    or_label = "false"
+    if or_res  { or_label  = "true" }
+    not_label = "false"
+    if not_a   { not_label = "true" }
+
+    draw_text(win 30 106 "a && b = " + and_label 0xFFAA00FF)
+    draw_text(win 200 106 "a || b = " + or_label  0x00AAFFFF)
+    draw_text(win 370 106 "!a     = " + not_label  0xFF44AAFF)
+    draw_text(win 30 130 "precedenza: 2 + 3 * 4 = " + str(2 + 3 * 4) 0xAAFFAAFF)
+    draw_text(win 300 130 "(2 + 3) * 4 = " + str((2 + 3) * 4) 0xAAFFAAFF)
+
+    # Sezione "Bars" — barre animate via clamp
+    draw_rect(win 20 210 760 160 0x131320FF)
+    draw_text(win 30 218 "Animated bars (fn clamp / fn draw_bar)" 0x00FFFFFF)
+
+    draw_text(win 30 248 "tick" 0xAAAAFFFF)
+    draw_bar(win 100 244 620 20 tick 255 dyn_color)
+
+    abs_tick = abs_val(tick - 128)
+    draw_text(win 30 278 "abs  " 0xAAAAFFFF)
+    draw_bar(win 100 274 620 20 abs_tick 128 0xFF44AAFF)
+
+    clamped = clamp(frame % 200 50 150)
+    draw_text(win 30 308 "clamp" 0xAAAAFFFF)
+    draw_bar(win 100 304 620 20 clamped 200 0x44FFFFFF)
+
+    # Sezione "HUD rows" — if/else if/else chain
+    draw_rect(win 20 390 760 100 0x131320FF)
+    draw_text(win 30 398 "if / else if / else" 0x00FFFFFF)
+
+    phase_label = "none"
+    phase_color = 0x888888FF
+    if tick < 64 {
+        phase_label = "PHASE LOW  [0-64)"
+        phase_color = 0x0044FFFF
+    } else if tick < 128 {
+        phase_label = "PHASE MID  [64-128)"
+        phase_color = 0x00FF88FF
+    } else if tick < 192 {
+        phase_label = "PHASE HIGH [128-192)"
+        phase_color = 0xFFAA00FF
+    } else {
+        phase_label = "PHASE PEAK [192-255]"
+        phase_color = 0xFF2244FF
+    }
+
+    draw_rect(win 30 420 740 30 0x1A1A40FF)
+    draw_text(win 40 428 phase_label phase_color)
+
+    surface_blit(win)
+    vsync()
+    frame = frame + 1
+}
+
+win_close(win)
+out "demo_functions done"

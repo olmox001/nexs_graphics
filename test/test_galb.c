@@ -12,7 +12,9 @@
 #include <stddef.h>
 
 /* ── Minimal stubs for GHAL API ─────────────────────────────── */
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 typedef unsigned long uintptr_t;
 
 #include "../include/ghal.h"

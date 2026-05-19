@@ -141,10 +141,12 @@ static int macos_win_open(GHalWindow *w) {
 
 static void macos_win_close(GHalWindow *w) {
     if (!w->native_handle) return;
+    uintptr_t h = w->native_handle;
+    w->native_handle = 0;  /* zero first — guard against re-entrant close via windowShouldClose: */
     @autoreleasepool {
-        GHalNSWindow *nsw = (__bridge_transfer GHalNSWindow *)(void *)w->native_handle;
+        GHalNSWindow *nsw = (__bridge_transfer GHalNSWindow *)(void *)h;
+        [nsw setDelegate:nil];  /* prevent windowShouldClose: from firing during [close] */
         [nsw close];
-        w->native_handle = 0;
     }
 }
 

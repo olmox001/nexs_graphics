@@ -1,0 +1,130 @@
+# flappy_bird_interactive.nx
+# ===================================================================
+# Flappy Bird clone nativo per NEXS
+# Sfrutta GHAL per il rendering e _readkey() per il polling I/O non bloccante
+# ===================================================================
+
+fn pseudo_rand(seed) {
+    val = (seed * 73 + 281) % 300
+    ret val + 150 
+}
+
+win = win_open("Flappy NEXS Interactive" 800 600)
+if win < 0 {
+    out "ERROR: window failed"
+    ret
+}
+
+# Attiva la modalità cruda per intercettare i tasti in tempo reale
+# senza attendere la pressione di ENTER
+rawon()
+
+frame = 0
+score = 0
+game_over = false
+
+bird_x = 200
+bird_y = 300
+bird_v = 0
+bird_size = 30
+gravity = 1      
+jump_str = -12   
+
+pipe_x = 800
+pipe_w = 80
+pipe_gap_y = 300 
+pipe_gap_h = 170 
+pipe_speed = 5
+
+loop {
+    draw_clear(win 0x70C5CEFF)
+
+    # ── Polling Input Non-Bloccante ───────────────────────
+    k = _readkey()
+
+    if k == "q" || k == "ESC" || k == "\x18" {
+        break
+    }
+
+    if !game_over {
+        # Input per il salto (Spazio, Freccia Su, o W)
+        if k == " " || k == "UP" || k == "KEY_UP" || k == "w" {
+             bird_v = jump_str
+        }
+
+        # ── Fisica ────────────────────────────────────────
+        bird_v = bird_v + gravity
+        bird_y = bird_y + bird_v
+
+        # ── Aggiornamento Tubo ────────────────────────────
+        pipe_x = pipe_x - pipe_speed
+        if pipe_x < (pipe_w * -1) {
+            pipe_x = 800
+            score = score + 1
+            pipe_gap_y = pseudo_rand(frame + score * 15)
+        }
+
+        # ── Collisioni ────────────────────────────────────
+        if bird_y > 570 || bird_y < 0 {
+            game_over = true
+        }
+        
+        if (bird_x + bird_size) > pipe_x && bird_x < (pipe_x + pipe_w) {
+            gap_top = pipe_gap_y - (pipe_gap_h / 2)
+            gap_bottom = pipe_gap_y + (pipe_gap_h / 2)
+            
+            if bird_y < gap_top || (bird_y + bird_size) > gap_bottom {
+                game_over = true
+            }
+        }
+    } else {
+        # Gestione stato Game Over - Attesa input per riavvio
+        if k == " " || k == "ENTER" || k == "r" {
+            game_over = false
+            bird_y = 300
+            bird_v = 0
+            pipe_x = 800
+            score = 0
+        }
+    }
+
+    # ── Rendering GHAL ────────────────────────────────────
+    
+    # Tubo Superiore
+    top_pipe_h = pipe_gap_y - (pipe_gap_h / 2)
+    draw_rect(win pipe_x 0 pipe_w top_pipe_h 0x74BF2EFF)
+    draw_rect(win pipe_x - 4 top_pipe_h - 20 pipe_w + 8 20 0x54A018FF)
+
+    # Tubo Inferiore
+    bottom_pipe_y = pipe_gap_y + (pipe_gap_h / 2)
+    bottom_pipe_h = 600 - bottom_pipe_y
+    draw_rect(win pipe_x bottom_pipe_y pipe_w bottom_pipe_h 0x74BF2EFF)
+    draw_rect(win pipe_x - 4 bottom_pipe_y pipe_w + 8 20 0x54A018FF)
+
+    # Terreno
+    draw_rect(win 0 580 800 20 0xDDD894FF)
+
+    # Uccello
+    draw_rect(win bird_x bird_y bird_size bird_size 0xF2E435FF)
+    draw_rect(win bird_x + 20 bird_y + 5 6 6 0x000000FF)
+
+    # UI Base
+    draw_text(win 360 50 "SCORE: " + str(score) 0xFFFFFFFF)
+
+    # UI Game Over
+    if game_over {
+        draw_rect(win 250 220 300 120 0x000000AA)
+        draw_text(win 340 250 "GAME OVER" 0xFF2222FF)
+        draw_text(win 280 280 "Premi SPAZIO per riprovare" 0xFFFFFFFF)
+        draw_text(win 320 310 "Premi Q per uscire" 0xAAAAAAFF)
+    }
+
+    surface_blit(win)
+    vsync()
+    frame = frame + 1
+}
+
+# Ripristina la riga di comando al termine dell'esecuzione
+rawoff()
+win_close(win)
+out "Flappy Bird terminato."

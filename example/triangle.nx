@@ -1,25 +1,72 @@
-# triangle.nx — Vector rasterization demo
-# Draws a triangle using lines from the draw2d API.
+# triangle.nx — NEXS Graphics Showcase
+# Sintassi canonica: nessuna virgola, ret per uscita anticipata
 
-win = win_open("Triangle Demo" 640 480)
-if win < 0 { out "error"; halt }
+win = win_open("NEXS Graphics Showcase" 900 600)
 
-draw_clear(win 0x111111FF)
+if win < 0 {
+    out "failed to open window"
+    ret
+}
 
-# Triangle vertices (centered)
-x0 = 320  y0 = 80    # top
-x1 = 120  y1 = 400   # bottom-left
-x2 = 520  y2 = 400   # bottom-right
+# ─── Background ───────────────────────────────────────────
 
-# We don't have a direct draw_line builtin yet (Phase 5 stub)
-# Use draw_rect as 1px lines approximation
-draw_rect(win x0 y0 1 320 0xFF0000FF)   # left edge approximation
-draw_rect(win x1 y1 400 1 0x00FF00FF)   # base
-draw_rect(win x2 y0 1 320 0x0000FFFF)   # right edge approximation
+draw_clear(win 0x101820FF)
 
-draw_text(win 260 440 "Triangle" 0xFFFFFFFF)
+# ─── Outer frame ──────────────────────────────────────────
+
+draw_rect(win 20 20 860 560 0x00D0FFFF)
+draw_rect(win 24 24 852 552 0x101820FF)
+
+# ─── Top bar ──────────────────────────────────────────────
+
+draw_rect(win 40 40 820 60 0x182838FF)
+draw_text(win 60 58 "NEXS GRAPHICS SHOWCASE" 0xFFFFFFFF)
+draw_text(win 60 80 "Parser + Runtime + GHAL demo" 0xAAAAAAFF)
+
+# ─── Left panel: status ───────────────────────────────────
+
+draw_rect(win 50 130 240 390 0x1F2F45FF)
+draw_text(win 70 160 "SYSTEM STATUS" 0x00FFFFFF)
+
+draw_rect(win 70 200 180 24 0x00AA44FF)
+draw_text(win 80 205 "graphics: online" 0xFFFFFFFF)
+
+draw_rect(win 70 240 180 24 0x00AA44FF)
+draw_text(win 80 245 "runtime: stable" 0xFFFFFFFF)
+
+draw_rect(win 70 280 180 24 0x00AA44FF)
+draw_text(win 80 285 "parser: active" 0xFFFFFFFF)
+
+draw_rect(win 70 320 180 24 0x00AA44FF)
+draw_text(win 80 325 "compositor: ok" 0xFFFFFFFF)
+
+draw_rect(win 70 360 180 24 0x00AA44FF)
+draw_text(win 80 365 "registry: mounted" 0xFFFFFFFF)
+
+# ─── Center panel: render test ────────────────────────────
+
+draw_rect(win 320 130 530 390 0x162030FF)
+draw_text(win 350 160 "RENDER TEST" 0xFFFFFFFF)
+
+draw_rect(win 360 210 120 120 0x00D0FFFF)
+draw_rect(win 520 210 120 120 0xFF8800FF)
+draw_rect(win 680 210 120 120 0x8844FFFF)
+
+draw_rect(win 365 335 120 10 0x00000088)
+draw_rect(win 525 335 120 10 0x00000088)
+draw_rect(win 685 335 120 10 0x00000088)
+
+draw_rect(win 350 390 420 2 0x00D0FFFF)
+draw_rect(win 350 410 380 2 0xFF8800FF)
+draw_rect(win 350 430 340 2 0x8844FFFF)
+
+draw_text(win 350 470 "GHAL immediate-mode renderer online" 0xCCCCCCFF)
+
+# ─── Footer ───────────────────────────────────────────────
+
+draw_rect(win 40 540 820 30 0x182838FF)
+draw_text(win 60 548 "Press close button to terminate runtime" 0x999999FF)
+
+# ─── Present — runtime keeps window alive until user closes it ────
+
 surface_blit(win)
-
-i = 0
-while i < 120 { vsync(); i = i + 1 }
-win_close(win)

@@ -5,9 +5,9 @@ win1 = win_open("Window 1" 400 300)
 win2 = win_open("Window 2" 400 300)
 win3 = win_open("Window 3" 400 300)
 
-if win1 < 0 { out "error win1"; halt }
-if win2 < 0 { out "error win2"; halt }
-if win3 < 0 { out "error win3"; halt }
+if win1 < 0 { out "error win1"; ret }
+if win2 < 0 { out "error win2"; ret }
+if win3 < 0 { out "error win3"; ret }
 
 # Window 1: red
 draw_clear(win1 0xAA0000FF)

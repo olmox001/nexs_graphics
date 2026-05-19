@@ -12,7 +12,9 @@
 #include <stddef.h>
 
 /* Provide minimal NEXS_API stub before including GHAL headers */
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 
 /* Stub out the nexs_hal.h include chain for standalone compilation */
 #define NEXS_HAL_H

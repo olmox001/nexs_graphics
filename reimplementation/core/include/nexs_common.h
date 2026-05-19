@@ -152,6 +152,22 @@ extern "C" {
 #define MAX_FN_DEFS 2048
 #endif
 
+/* ── Hosted-mode size overrides ────────────────────────────────────────────
+ * ASTNode embeds: Token tok (char text[NAME_LEN]) + char name[NAME_LEN] +
+ * char params[MAX_PARAMS][NAME_LEN].  At NAME_LEN=8192 that is >256 KB per
+ * node; a 150-line animated script produces ~500 nodes = >128 MB — larger
+ * than the entire 64 MB pool.  On hosted builds identifiers never exceed
+ * ~128 chars, so 256 is safe.  MAX_STR_LEN follows to halve concat temps.
+ */
+#ifdef NEXS_HOST_TOOL
+#undef  NAME_LEN
+#define NAME_LEN     256
+#undef  REG_PATH_MAX
+#define REG_PATH_MAX 256
+#undef  MAX_STR_LEN
+#define MAX_STR_LEN  4096
+#endif
+
 #define NUM_LEAVES (POOL_SIZE / MIN_BLOCK)
 #define TREE_NODES (2 * NUM_LEAVES - 1)
 

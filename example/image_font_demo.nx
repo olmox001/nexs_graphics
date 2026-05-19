@@ -1,54 +1,56 @@
-// example/image_font_demo.nx — Image + font services demo
-//
-// Demonstrates the full .nx service stack:
-//   img_load → img_blit → font_load → font_draw → surface_blit
-//
-// Run on NEXS hosted:
-//   nexs run example/image_font_demo.nx
+# image_font_demo.nx — Image + font services demo
+#
+# Demonstrates the full .nx service stack:
+#   img_load -> img_blit -> font_load -> font_draw -> surface_blit
+#
+# Run on NEXS hosted:
+#   ./build/hosted/ghal example/image_font_demo.nx
 
-let win   = win_open("NEXS Image+Font Demo", 800, 600)
-let bg    = 0x1A1A2EFF
+win = win_open("NEXS Image+Font Demo" 800 600)
+if win < 0 {
+    out "ERROR: window failed"
+    ret
+}
 
-// Clear background
-draw_clear(win, bg)
+bg = 0x1A1A2EFF
 
-// Load and blit a background image (optional — skip if not found)
-let splash = img_load("/usr/share/ghal/splash.png")
+# Clear background
+draw_clear(win bg)
+
+# Load and blit a background image (optional — skip if not found)
+splash = img_load("/usr/share/ghal/splash.png")
 if splash > 0 {
-    img_blit(win, splash, 0, 0)
+    img_blit(win splash 0 0)
     img_free(splash)
 }
 
-// Load system font
-let fnt = font_load("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24.0)
+# Load system font
+fnt = font_load("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" 24.0)
 
 if fnt > 0 {
-    // Title
-    font_draw(win, fnt, 40, 40, "NEXS Graphics Layer", 0xE94560FF)
+    # Title
+    font_draw(win fnt 40 40 "NEXS Graphics Layer" 0xE94560FF)
 
-    // Body text with wrap
-    let body = "Image and font services run as modular .nx builtins. Each service self-registers at startup and publishes its resources into /dev/img/ and /dev/font/ in the NEXS registry."
-    font_draw_wrap(win, fnt, 40, 100, 720, body, 0xFFFFFFFF)
+    # Body text with wrap
+    body = "Image and font services run as modular builtins. Each service self-registers at startup and publishes its resources into /dev/img/ and /dev/font/ in the NEXS registry."
+    font_draw_wrap(win fnt 40 100 720 body 0xFFFFFFFF)
 
-    // Metrics info
-    let lh  = font_line_height(fnt)
-    let w   = font_measure(fnt, "NEXS")
-    font_draw(win, fnt, 40, 400, "line_height=" + str(lh) + "  measure(NEXS)=" + str(w), 0x888888FF)
+    # Metrics info
+    lh = font_line_height(fnt)
+    w  = font_measure(fnt "NEXS")
+    font_draw(win fnt 40 400 "line_height=" + str(lh) + "  measure(NEXS)=" + str(w) 0x888888FF)
 
     font_free(fnt)
 }
 
-// Scale demo: load, scale 2x, blit
-let icon = img_load("/usr/share/icons/hicolor/64x64/apps/ghal.png")
+# Scale demo: load, scale 2x, blit
+icon = img_load("/usr/share/icons/hicolor/64x64/apps/ghal.png")
 if icon > 0 {
-    let icon2x = img_scale(icon, 128, 128)
-    img_blit(win, icon2x, 640, 440)
+    icon2x = img_scale(icon 128 128)
+    img_blit(win icon2x 640 440)
     img_free(icon2x)
     img_free(icon)
 }
 
-// Present
+# Present — runtime keeps window alive until user closes it
 surface_blit(win)
-vsync()
-
-win_close(win)
