@@ -17,7 +17,7 @@
 #define GHAL_H
 #pragma once
 
-#include "base-nexs/hal/include/nexs_hal.h"
+#include "nexs_hal.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
