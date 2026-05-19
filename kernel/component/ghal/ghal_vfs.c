@@ -58,36 +58,44 @@ void *ghal_vfs_read_all(const char *path, int *out_len) {
    ================================================================ */
 #elif defined(NEXS_VFS)
 
-#include "nexs_vfs.h"   /* resolved via -I base-nexs/vfs/include */
+#include "nexs_vfs.h"
 
-struct GhalVfsFile { NexsFile *nf; };
+struct GhalVfsFile {
+    int fd;
+    int at_eof;
+};
 
 GhalVfsFile *ghal_vfs_open(const char *path) {
-    NexsFile *nf = nexs_open(path, NEXS_O_RDONLY);
-    if (!nf) return NULL;
+    int fd = vfs_open(path, 0); /* 0 = O_RDONLY */
+    if (fd < 0) return NULL;
     GhalVfsFile *f = malloc(sizeof(*f));
-    if (!f) { nexs_close(nf); return NULL; }
-    f->nf = nf;
+    if (!f) { vfs_close(fd); return NULL; }
+    f->fd = fd;
+    f->at_eof = 0;
     return f;
 }
 int  ghal_vfs_read(GhalVfsFile *f, void *buf, int n) {
-    return (int)nexs_read(f->nf, buf, (size_t)n);
+    if (!f || f->fd < 0) return -1;
+    int r = vfs_read(f->fd, buf, (size_t)n);
+    if (r <= 0) f->at_eof = 1;
+    return r;
 }
 void ghal_vfs_skip(GhalVfsFile *f, int n) {
-    nexs_seek(f->nf, (int64_t)n, NEXS_SEEK_CUR);
+    if (!f || f->fd < 0) return;
+    vfs_seek(f->fd, (int64_t)n, 1); /* 1 = SEEK_CUR */
 }
 int  ghal_vfs_eof(GhalVfsFile *f) {
-    return nexs_eof(f->nf);
+    if (!f) return 1;
+    return f->at_eof;
 }
 void ghal_vfs_close(GhalVfsFile *f) {
     if (!f) return;
-    nexs_close(f->nf);
+    if (f->fd >= 0) vfs_close(f->fd);
     free(f);
 }
 void *ghal_vfs_read_all(const char *path, int *out_len) {
     GhalVfsFile *f = ghal_vfs_open(path);
     if (!f) return NULL;
-    /* nexs_fsize — may not exist; fall back to incremental read */
     size_t cap = 65536, used = 0;
     uint8_t *buf = malloc(cap);
     if (!buf) { ghal_vfs_close(f); return NULL; }
@@ -100,6 +108,7 @@ void *ghal_vfs_read_all(const char *path, int *out_len) {
     if (out_len) *out_len = (int)used;
     return buf;
 }
+
 
 /* ================================================================
    seL4 Microkit: IPC to fs PD
