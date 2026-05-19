@@ -11,6 +11,8 @@ INCLUDES := \
     -I base-nexs/registry/include \
     -I base-nexs/lang/include \
     -I base-nexs/runtime/include \
+    -I base-nexs/compiler/include \
+    -I base-nexs/sys/include \
     -I include \
     -I vendor/include
 
@@ -34,11 +36,15 @@ NEXS_SRCS := $(shell find base-nexs -name '*.c' \
     ! -path 'base-nexs/hal/sel4/*' \
     ! -path 'base-nexs/kernel/*' \
     ! -path 'base-nexs/fs/*' \
+    ! -path 'base-nexs/runtime/main.c' \
+    ! -path 'base-nexs/core/utils.c' \
     2>/dev/null)
 
 # GHAL platform-independent sources
 GHAL_SRCS := \
     reimplementation/hal/hal_hosted.c \
+    reimplementation/runtime/main.c \
+    reimplementation/core/utils.c \
     compositor/compositor.c \
     compositor/window_registry.c \
     compositor/ipc_dispatcher.c \
@@ -113,9 +119,15 @@ $(TARGET_BIN): $(OBJS)
 # ── Tests ──────────────────────────────────────────────────────────────────
 TEST_CFLAGS := $(CFLAGS) -DGHAL_TEST_MODE
 
-$(OUTDIR)/test/%: test/%.c lib/draw2d.c lib/font.c bc/ghal_bc.c bc/ghal_asm.c \
-                  compositor/compositor.c compositor/window_registry.c \
-                  compositor/ipc_dispatcher.c host/ghal_host.c
+$(OUTDIR)/test/test_draw2d: test/test_draw2d.c lib/draw2d.c lib/font.c
+	@mkdir -p $(OUTDIR)/test
+	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(OUTDIR)/test/test_compositor: test/test_compositor.c compositor/compositor.c compositor/ipc_dispatcher.c
+	@mkdir -p $(OUTDIR)/test
+	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(OUTDIR)/test/test_galb: test/test_galb.c bc/ghal_bc.c bc/ghal_asm.c
 	@mkdir -p $(OUTDIR)/test
 	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
 

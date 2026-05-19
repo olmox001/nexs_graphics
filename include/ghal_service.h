@@ -37,11 +37,7 @@ extern "C" {
 
 /* ── Types from nexs_value / nexs_fn ─────────────────────────── */
 
-/* Forward-declare Value only if nexs_value.h hasn't already defined it */
-#ifndef NEXS_VALUE_H
-struct Value;
-typedef struct Value Value;
-#endif
+#include "nexs_value.h"
 typedef Value (*BuiltinFn)(Value *args, int n_args);
 
 /* ── Builtin descriptor ───────────────────────────────────────── */
