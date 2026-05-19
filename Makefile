@@ -34,7 +34,6 @@ NEXS_SRCS := $(shell find base-nexs -name '*.c' \
     ! -path 'base-nexs/hal/sel4/*' \
     ! -path 'base-nexs/kernel/*' \
     ! -path 'base-nexs/fs/*' \
-    ! -path 'base-nexs/runtime/main.c' \
     2>/dev/null)
 
 # GHAL platform-independent sources
@@ -49,7 +48,13 @@ GHAL_SRCS := \
     bc/ghal_bc.c \
     bc/ghal_asm.c \
     lang/ghal_builtins.c \
-    lang/ghal_fn_table.c
+    lang/ghal_fn_table.c \
+    services/core/ghal_service_registry.c \
+    services/core/ghal_vfs.c \
+    services/image/ghal_image.c \
+    services/image/ghal_image_nexs.c \
+    services/font/ghal_font_ttf.c \
+    services/font/ghal_font_nexs.c
 
 # Platform-specific backend
 UNAME := $(shell uname)
