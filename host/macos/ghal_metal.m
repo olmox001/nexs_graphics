@@ -6,6 +6,7 @@
  */
 
 #import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
 #import <Foundation/Foundation.h>
 
 #include "../../include/ghal.h"
@@ -13,7 +14,7 @@
 /* ── Blit helper — upload RGBA/BGRA CPU buffer to MTLTexture ─── */
 
 int ghal_metal_upload_texture(id<MTLDevice> device,
-                               id<MTLCommandQueue> queue,
+                               id<MTLCommandQueue> queue __attribute__((unused)),
                                const void *pixels,
                                uint32_t w, uint32_t h, uint32_t stride,
                                id<MTLTexture> *out_tex) {
@@ -69,7 +70,7 @@ int ghal_metal_blit_to_drawable(id<MTLCommandQueue> queue,
 
 /* ── Simple compute pass wrapper (Phase 8 stub) ──────────────── */
 
-int ghal_metal_compute_dispatch(id<MTLDevice> device,
+int ghal_metal_compute_dispatch(id<MTLDevice> device __attribute__((unused)),
                                  id<MTLCommandQueue> queue,
                                  id<MTLComputePipelineState> pso,
                                  id<MTLBuffer> in_buf,

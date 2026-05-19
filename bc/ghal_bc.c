@@ -28,6 +28,7 @@ int galb_vm_init(GalbVM *vm, const uint8_t *code, uint32_t len) {
 }
 
 /* ── Helper: pop u64 from register file (reg[0] = top) ──────── */
+static inline uint64_t pop_reg(GalbVM *vm, int slot) __attribute__((unused));
 static inline uint64_t pop_reg(GalbVM *vm, int slot) {
     return vm->regs[slot % GALB_MAX_REGS];
 }

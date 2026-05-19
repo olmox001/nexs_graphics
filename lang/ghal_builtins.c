@@ -55,7 +55,9 @@ static Value bi_win_open(Value *args, int n) {
     if (n < 3)
         return val_err(1, "win_open: need title w h");
 
-    const char *title = val_to_str(&args[0]);
+    char        title_buf[256];
+    val_to_str(&args[0], title_buf, sizeof(title_buf));
+    const char *title = title_buf;
     uint32_t    w     = (uint32_t)args[1].ival;
     uint32_t    h     = (uint32_t)args[2].ival;
 
@@ -121,7 +123,9 @@ static Value bi_draw_text(Value *args, int n) {
     uint32_t    id    = (uint32_t)args[0].ival;
     int32_t     x     = (int32_t)args[1].ival;
     int32_t     y     = (int32_t)args[2].ival;
-    const char *text  = val_to_str(&args[3]);
+    char        text_buf[512];
+    val_to_str(&args[3], text_buf, sizeof(text_buf));
+    const char *text  = text_buf;
     uint32_t    color = (uint32_t)args[4].ival;
 
     GHalWindow *w = find_win(id);
@@ -171,8 +175,9 @@ static Value bi_gl_clear(Value *args, int n) {
 
 static Value bi_compute_run(Value *args, int n) {
     if (n < 1) return val_err(1, "compute_run: need kernel");
-    const char *kernel = val_to_str(&args[0]);
-    (void)kernel;
+    char kernel_buf[256];
+    val_to_str(&args[0], kernel_buf, sizeof(kernel_buf));
+    (void)kernel_buf;
     /* Phase 8: dispatch to ghal_compute */
     return val_int(0);
 }
@@ -183,4 +188,27 @@ static Value bi_vsync(Value *args, int n) {
     (void)args; (void)n;
     ghal_vsync();
     return val_int(0);
+}
+
+/* ── Registration ─────────────────────────────────────────────── */
+
+void ghal_builtins_register(void) {
+    fn_register_builtin_sig("win_open",
+        bi_win_open,    "win_open(title str, w int, h int) -> int");
+    fn_register_builtin_sig("win_close",
+        bi_win_close,   "win_close(id int) -> int");
+    fn_register_builtin_sig("draw_rect",
+        bi_draw_rect,   "draw_rect(win int, x int, y int, w int, h int, color int) -> int");
+    fn_register_builtin_sig("surface_blit",
+        bi_surface_blit,"surface_blit(win int) -> int");
+    fn_register_builtin_sig("draw_text",
+        bi_draw_text,   "draw_text(win int, x int, y int, text str, color int) -> int");
+    fn_register_builtin_sig("draw_clear",
+        bi_draw_clear,  "draw_clear(win int, color int) -> int");
+    fn_register_builtin_sig("gl_clear",
+        bi_gl_clear,    "gl_clear(r float, g float, b float, a float) -> int");
+    fn_register_builtin_sig("compute_run",
+        bi_compute_run, "compute_run(kernel str) -> int");
+    fn_register_builtin_sig("vsync",
+        bi_vsync,       "vsync() -> int");
 }

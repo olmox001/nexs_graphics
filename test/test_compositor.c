@@ -115,24 +115,16 @@ static char g_reg_entries[64][2][256];
 static int  g_reg_count = 0;
 
 /* Registry stubs */
-typedef struct { int ival; const char *sval; int type; } Value;
-#define VAL_INT 1
-#define VAL_STR 2
-#define VAL_PTR 3
-#define RK_READ  1
-#define RK_WRITE 2
-static int reg_set(const char *path, Value v, int rights) {
-    (void)rights; (void)v;
-    if (g_reg_count < 64) {
-        strncpy(g_reg_entries[g_reg_count][0], path, 255);
-        g_reg_count++;
-    }
+static int reg_set_impl(const char *path) {
+    if (g_reg_count < 64)
+        strncpy(g_reg_entries[g_reg_count++][0], path, 255);
     return 0;
 }
-static int reg_delete(const char *path) { (void)path; return 0; }
-static Value val_str(const char *s) { Value v; v.type=VAL_STR; v.sval=s; v.ival=0; return v; }
-void winreg_set_int(const char *p, int val) { Value v; v.type=VAL_INT; v.ival=val; v.sval=NULL; reg_set(p,v,RK_READ|RK_WRITE); }
-void winreg_set_str(const char *p, const char *s) { reg_set(p, val_str(s), RK_READ|RK_WRITE); }
+int reg_delete(const char *path) { (void)path; return 0; }
+void winreg_set_int(const char *p, int val) { (void)val; reg_set_impl(p); }
+void winreg_set_str(const char *p, const char *s) { (void)s; reg_set_impl(p); }
+void gcomp_publish_registry(GHalWindow *w) { (void)w; }
+void gcomp_update_registry(GHalWindow *w) { (void)w; }
 
 static int stub_win_open(GHalWindow *w) { (void)w; g_win_open_calls++; return 0; }
 static void stub_win_close(GHalWindow *w) { (void)w; g_win_close_calls++; }

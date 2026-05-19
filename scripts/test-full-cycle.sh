@@ -128,7 +128,7 @@ log "=== Phase 4: GALB VM unit tests ==="
 if cc -std=c17 -Wall -g \
        -DNEXS_HAL_H -DHAL_INTERNAL_H -DNEXS_MMU_H \
        -I include \
-       test/test_galb.c bc/ghal_bc.c bc/ghal_asm.c lib/draw2d.c lib/font.c \
+       test/test_galb.c bc/ghal_bc.c bc/ghal_asm.c \
        -o build/test/test_galb 2>/dev/null; then
     pass "GALB test built"
     ./build/test/test_galb && pass "GALB tests PASSED" || fail "GALB tests FAILED"
@@ -144,9 +144,7 @@ if cc -std=c17 -Wall -g \
        -I include \
        test/test_compositor.c \
        compositor/compositor.c \
-       compositor/window_registry.c \
        compositor/ipc_dispatcher.c \
-       lib/draw2d.c lib/font.c \
        -o build/test/test_compositor 2>/dev/null; then
     pass "compositor test built"
     ./build/test/test_compositor && pass "Compositor tests PASSED" || fail "Compositor tests FAILED"
@@ -154,7 +152,24 @@ else
     skip "Compositor test build" "include resolution requires full base-nexs build"
 fi
 
-# ── 6. Platform compile check ───────────────────────────────────
+# ── 6. Build stb services test ──────────────────────────────────
+log ""
+log "=== Phase 5+: stb services unit tests ==="
+if cc -std=c17 -Wall -g \
+       -DNEXS_HAL_H -DHAL_INTERNAL_H -DNEXS_MMU_H \
+       -I include \
+       -I vendor/include \
+       test/test_services.c \
+       services/image/ghal_image.c \
+       services/font/ghal_font_ttf.c \
+       -o build/test/test_services -lm 2>/dev/null; then
+    pass "services test built"
+    ./build/test/test_services && pass "Services tests PASSED" || fail "Services tests FAILED"
+else
+    skip "Services test build" "requires vendor/include stb headers"
+fi
+
+# ── 7. Platform compile check ───────────────────────────────────
 log ""
 log "=== Phase 2/3: Platform backend compile check ==="
 

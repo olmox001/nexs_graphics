@@ -43,18 +43,13 @@ int ghal_init(void) {
     if (g_ghal_driver->get_display_size)
         g_ghal_driver->get_display_size(&dw, &dh);
 
-    Value v;
-    v.type = VAL_STR;
-    /* backend name */
-    reg_set("/dev/gfx/backend", val_str(g_ghal_driver->name),  RK_READ);
-    v.type = VAL_INT; v.ival = (int)dw;
-    reg_set("/dev/gfx/width",   v, RK_READ);
-    v.ival = (int)dh;
-    reg_set("/dev/gfx/height",  v, RK_READ);
-    v.ival = (int)(g_ghal_driver->vsync_hz ? g_ghal_driver->vsync_hz : 60);
-    reg_set("/dev/gfx/vsync_hz", v, RK_READ);
-    reg_set("/dev/gfx/format",  val_str("BGRA8"), RK_READ);
-    reg_set("/dev/gfx/gpu_vendor", val_str("unknown"), RK_READ);
+    reg_set("/dev/gfx/backend",   val_str(g_ghal_driver->name), RK_READ);
+    reg_set("/dev/gfx/width",     val_int((int64_t)dw),         RK_READ);
+    reg_set("/dev/gfx/height",    val_int((int64_t)dh),         RK_READ);
+    reg_set("/dev/gfx/vsync_hz",  val_int((int64_t)(g_ghal_driver->vsync_hz
+                                           ? g_ghal_driver->vsync_hz : 60)), RK_READ);
+    reg_set("/dev/gfx/format",    val_str("BGRA8"),              RK_READ);
+    reg_set("/dev/gfx/gpu_vendor",val_str("unknown"),            RK_READ);
 
     /* Initialize compositor */
     gcomp_init(&s_compositor);

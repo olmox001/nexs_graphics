@@ -2,55 +2,24 @@
  *
  * Called once at runtime startup (from reimplementation/hal/hal_hosted.c
  * or from the seL4/baremetal init path).
+ *
+ * ghal_builtins_register() pushes the core graphics builtins (win_open,
+ * draw_rect, vsync, …) into the fn table.  ghal_service_init_all() then
+ * walks the GhalServiceModule linked list built by constructor(300)
+ * registrations and pushes every service's builtins.
  */
 
 #include "nexs_fn.h"
+#include "../include/ghal_service.h"
 
-/* Forward declarations (defined in ghal_builtins.c) */
-extern Value bi_win_open(Value *args, int n);
-extern Value bi_win_close(Value *args, int n);
-extern Value bi_draw_rect(Value *args, int n);
-extern Value bi_surface_blit(Value *args, int n);
-extern Value bi_draw_text(Value *args, int n);
-extern Value bi_draw_clear(Value *args, int n);
-extern Value bi_gl_clear(Value *args, int n);
-extern Value bi_compute_run(Value *args, int n);
-extern Value bi_vsync(Value *args, int n);
+/* Declared in ghal_builtins.c — registers the core bi_* functions */
+extern void ghal_builtins_register(void);
 
 void ghal_register_builtins(void) {
-    fn_register_builtin_sig("win_open",
-        bi_win_open,
-        "win_open(title str, w int, h int) -> int");
+    /* Core graphics builtins (window, draw, vsync, …) */
+    ghal_builtins_register();
 
-    fn_register_builtin_sig("win_close",
-        bi_win_close,
-        "win_close(id int) -> int");
-
-    fn_register_builtin_sig("draw_rect",
-        bi_draw_rect,
-        "draw_rect(win int, x int, y int, w int, h int, color int) -> int");
-
-    fn_register_builtin_sig("surface_blit",
-        bi_surface_blit,
-        "surface_blit(win int) -> int");
-
-    fn_register_builtin_sig("draw_text",
-        bi_draw_text,
-        "draw_text(win int, x int, y int, text str, color int) -> int");
-
-    fn_register_builtin_sig("draw_clear",
-        bi_draw_clear,
-        "draw_clear(win int, color int) -> int");
-
-    fn_register_builtin_sig("gl_clear",
-        bi_gl_clear,
-        "gl_clear(r float, g float, b float, a float) -> int");
-
-    fn_register_builtin_sig("compute_run",
-        bi_compute_run,
-        "compute_run(kernel str) -> int");
-
-    fn_register_builtin_sig("vsync",
-        bi_vsync,
-        "vsync() -> int");
+    /* Initialize all self-registered service modules (image, font, …).
+     * Each module was registered by its constructor(300) before main(). */
+    ghal_service_init_all();
 }

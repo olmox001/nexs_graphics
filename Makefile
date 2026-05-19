@@ -8,27 +8,33 @@ INCLUDES := \
     -I base-nexs/hal/include \
     -I base-nexs/include \
     -I base-nexs/core/include \
-    -I base-nexs/kernel/include \
     -I base-nexs/registry/include \
     -I base-nexs/lang/include \
     -I base-nexs/runtime/include \
     -I include \
     -I vendor/include
 
-CFLAGS   := -Wall -Wextra -Werror -std=c17 -g $(INCLUDES)
+CFLAGS   := -Wall -Wextra -Werror -std=c17 -g $(INCLUDES) -DNEXS_HOST_TOOL -DHOST_OS_MACOS
 CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -g $(INCLUDES)
 LDFLAGS  :=
 CC       ?= cc
 
+# Relax compiler rules for the pristine base-nexs submodule to prevent upstream warnings from halting the build
+$(OUTDIR)/base-nexs/%.o: CFLAGS += -Wno-error
+
 # ── Source files ───────────────────────────────────────────────────────────
 
-# base-nexs core: exclude hal_hosted.c (overridden by reimplementation/)
+# base-nexs core: hosted builds exclude kernel/ and fs/ (baremetal-only).
+# kernel/ and fs/ use block-device and VFS symbols not available on POSIX hosts.
 NEXS_SRCS := $(shell find base-nexs -name '*.c' \
     ! -path 'base-nexs/hal/hal_hosted.c' \
     ! -path 'base-nexs/hal/amd64/*' \
     ! -path 'base-nexs/hal/arm64/*' \
     ! -path 'base-nexs/hal/riscv64/*' \
     ! -path 'base-nexs/hal/sel4/*' \
+    ! -path 'base-nexs/kernel/*' \
+    ! -path 'base-nexs/fs/*' \
+    ! -path 'base-nexs/runtime/main.c' \
     2>/dev/null)
 
 # GHAL platform-independent sources

@@ -5,6 +5,7 @@
  */
 
 #include "../include/ghal_bc.h"
+#include "../include/ghal.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -35,6 +36,7 @@ static int galb_buf_ensure(GalbBuf *b, uint32_t need) {
     return 0;
 }
 
+static void galb_buf_free(GalbBuf *b) __attribute__((unused));
 static void galb_buf_free(GalbBuf *b) {
     free(b->data);
     b->data = NULL;

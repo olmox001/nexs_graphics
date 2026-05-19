@@ -16,6 +16,9 @@
 /* Forward declarations (implemented in window_registry.c) */
 extern void winreg_set_int(const char *path, int val);
 extern void winreg_set_str(const char *path, const char *val);
+extern void gcomp_publish_registry(GHalWindow *w);
+extern void gcomp_update_registry(GHalWindow *w);
+extern int  reg_delete(const char *path);
 
 /* ── Compositor init/shutdown ───────────────────────────────── */
 
@@ -138,6 +141,57 @@ void gcomp_send_input_to_window(uint32_t win_id,
 
     /* Publish to registry inbox key */
     winreg_set_str(path, buf);
+}
+
+/* ── Window registration ────────────────────────────────────── */
+
+int gcomp_win_register(GCompositor *c, GHalWindow *w) {
+    if (!c || !w || c->count >= GCOMP_MAX_WINDOWS) return -1;
+
+    w->id = c->next_win_id++;
+    snprintf(w->reg_path, sizeof(w->reg_path), "/dev/win/%u", w->id);
+
+    if (g_ghal_driver && g_ghal_driver->win_open) {
+        if (g_ghal_driver->win_open(w) != 0) return -1;
+    }
+
+    c->wins[c->count] = *w;
+    c->damage_flags[c->count] = 0;
+    c->count++;
+
+    gcomp_publish_registry(&c->wins[c->count - 1]);
+    winreg_set_int("/sys/compositor/windows", c->count);
+    c->focused_id = w->id;
+    winreg_set_int("/sys/compositor/focused", (int)w->id);
+    return 0;
+}
+
+void gcomp_win_unregister(GCompositor *c, uint32_t id) {
+    if (!c) return;
+    for (int i = 0; i < c->count; i++) {
+        if (c->wins[i].id != id) continue;
+
+        if (g_ghal_driver && g_ghal_driver->win_close)
+            g_ghal_driver->win_close(&c->wins[i]);
+
+        char p[80];
+        snprintf(p, sizeof(p), "/dev/win/%u", id);
+        reg_delete(p);
+
+        int last = c->count - 1;
+        if (i != last) {
+            c->wins[i]         = c->wins[last];
+            c->damage_flags[i] = c->damage_flags[last];
+        }
+        c->count--;
+        winreg_set_int("/sys/compositor/windows", c->count);
+
+        if (c->focused_id == id) {
+            c->focused_id = (c->count > 0) ? c->wins[0].id : 0;
+            winreg_set_int("/sys/compositor/focused", (int)c->focused_id);
+        }
+        return;
+    }
 }
 
 /* ── IPC event routing ──────────────────────────────────────── */

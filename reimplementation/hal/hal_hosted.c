@@ -6,15 +6,15 @@
 
 #ifndef NEXS_BAREMETAL
 
-#include "include/nexs_hal.h"
+#include "nexs_hal.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "include/hal_internal.h"
-#include "include/nexs_mmu.h"
-#include "../../base-nexs/registry/include/nexs_registry.h"
-#include "../../base-nexs/core/include/nexs_value.h"
-#include "../../base-nexs/core/include/nexs_alloc.h"
+#include "hal_internal.h"
+#include "nexs_mmu.h"
+#include "nexs_registry.h"
+#include "nexs_value.h"
+#include "nexs_alloc.h"
 
 /* ── Standard hosted HAL stubs (identical to base-nexs version) ── */
 
@@ -60,6 +60,7 @@ int mm_free_page(uint32_t pid, vaddr_t virt) {
 
 int mm_map_range(uint32_t pid, vaddr_t virt, paddr_t phys,
                  uint32_t pages, uint32_t flags) {
+    (void)phys;
     for (uint32_t i = 0; i < pages; i++) {
         if (mm_alloc_page(pid, virt + i * 4096, flags) != 0) return -1;
     }

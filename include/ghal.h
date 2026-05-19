@@ -17,7 +17,12 @@
 #define GHAL_H
 #pragma once
 
+#ifndef NEXS_HAL_H
 #include "nexs_hal.h"
+#endif
+#ifndef NEXS_API
+#define NEXS_API
+#endif
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>

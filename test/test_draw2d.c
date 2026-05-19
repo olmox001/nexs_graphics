@@ -177,8 +177,8 @@ static void test_oob_safety(void) {
     uint32_t fill = GHAL_RGBA(0xFF, 0xFF, 0xFF, 0xFF);
     draw2d_fill_rect(&s, -10, -10, 100, 100, fill);
     draw2d_line(&s, -5, -5, 100, 100, 0xFF0000FF);
-    EXPECT_EQ(get_pixel(&s, 31, 31), fill, "bottom-right clipped fill");
-    EXPECT_EQ(get_pixel(&s,  0,  0), fill, "top-left from over-size");
+    EXPECT_EQ(get_pixel(&s, 31,  0), fill, "top-right not on diagonal");
+    EXPECT_EQ(get_pixel(&s,  0, 31), fill, "bottom-left not on diagonal");
     free_surf(&s);
 }
 
