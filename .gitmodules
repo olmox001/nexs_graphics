@@ -2,3 +2,6 @@
 	path = base-nexs
 	url = https://github.com/olmox001/base-nexs.git
 	branch = dev-stable
+[submodule "scratch/stb"]
+	path = scratch/stb
+	url = https://github.com/nothings/stb.git
