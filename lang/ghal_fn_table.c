@@ -10,7 +10,7 @@
  */
 
 #include "nexs_fn.h"
-#include "../include/ghal_service.h"
+#include "ghal_service.h"
 
 /* Declared in ghal_builtins.c — registers the core bi_* functions */
 extern void ghal_builtins_register(void);

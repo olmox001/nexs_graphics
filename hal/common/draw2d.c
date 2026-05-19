@@ -4,9 +4,9 @@
  * No platform dependencies; testable entirely in hosted mode.
  */
 
-#include "../include/ghal.h"
-#include "../include/ghal_2d.h"
-#include "../include/ghal_surface.h"
+#include "ghal.h"
+#include "ghal_2d.h"
+#include "ghal_surface.h"
 #include "font_data.h"
 
 #include <string.h>

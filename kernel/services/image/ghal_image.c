@@ -27,8 +27,8 @@
 #include "stb_image_write.h"
 #include "stb_image_resize2.h"
 
-#include "../../include/ghal_image.h"
-#include "../core/ghal_vfs.h"
+#include "ghal_image.h"
+#include "ghal_vfs.h"
 
 #include <stdlib.h>
 #include <string.h>

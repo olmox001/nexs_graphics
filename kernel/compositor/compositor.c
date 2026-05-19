@@ -5,9 +5,9 @@
  * No #ifdef, no platform-specific logic here.
  */
 
-#include "../include/ghal_compositor.h"
-#include "../include/ghal_surface.h"
-#include "../include/ghal_2d.h"
+#include "ghal_compositor.h"
+#include "ghal_surface.h"
+#include "ghal_2d.h"
 #include "include/compositor_internal.h"
 
 /* Resolved via -I base-nexs/lang/include */

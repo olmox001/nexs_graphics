@@ -12,7 +12,7 @@
 
 #ifdef NEXS_BAREMETAL
 
-#include "../include/ghal.h"
+#include "ghal.h"
 
 #include <stdint.h>
 #include <string.h>

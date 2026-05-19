@@ -7,8 +7,8 @@
 
 #ifndef __APPLE__
 
-#include "../../include/ghal.h"
-#include "../../host/linux_x11/ghal_egl.h"
+#include "ghal.h"
+#include "ghal_egl.h"
 
 #include <dlfcn.h>
 #include <stdio.h>

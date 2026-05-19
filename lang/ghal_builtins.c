@@ -4,10 +4,10 @@
  * Registered via fn_register_builtin_sig() in ghal_fn_table.c.
  */
 
-#include "../include/ghal.h"
-#include "../include/ghal_2d.h"
-#include "../include/ghal_compositor.h"
-#include "../include/ghal_bc.h"
+#include "ghal.h"
+#include "ghal_2d.h"
+#include "ghal_compositor.h"
+#include "ghal_bc.h"
 
 /* Resolved via -I base-nexs/lang/include */
 #include "nexs_fn.h"

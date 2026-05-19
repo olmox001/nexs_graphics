@@ -4,7 +4,7 @@
 #define COMPOSITOR_INTERNAL_H
 #pragma once
 
-#include "../../include/ghal_compositor.h"
+#include "ghal_compositor.h"
 
 /* Max pending IPC messages in local queue */
 #define COMP_IPC_QUEUE_DEPTH 256

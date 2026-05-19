@@ -6,7 +6,7 @@
 
 #ifdef NEXS_SEL4
 
-#include "../include/ghal_ipc.h"
+#include "ghal_ipc.h"
 #include <microkit.h>
 
 #include <string.h>

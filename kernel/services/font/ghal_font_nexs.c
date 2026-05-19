@@ -27,10 +27,10 @@
 #define NEXS_HAL_H
 #endif
 
-#include "../../include/ghal_font_ttf.h"
-#include "../../include/ghal_service.h"
-#include "../../include/ghal.h"
-#include "../../include/ghal_2d.h"
+#include "ghal_font_ttf.h"
+#include "ghal_service.h"
+#include "ghal.h"
+#include "ghal_2d.h"
 
 #include "nexs_fn.h"
 #include "nexs_value.h"

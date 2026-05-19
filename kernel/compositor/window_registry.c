@@ -8,7 +8,7 @@
 #include "nexs_registry.h"
 #include "nexs_value.h"
 
-#include "../include/ghal_compositor.h"
+#include "ghal_compositor.h"
 
 #include <stdio.h>
 #include <string.h>

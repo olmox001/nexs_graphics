@@ -17,9 +17,9 @@
 #endif
 typedef unsigned long uintptr_t;
 
-#include "../include/ghal.h"
-#include "../include/ghal_bc.h"
-#include "../include/ghal_2d.h"
+#include "ghal.h"
+#include "ghal_bc.h"
+#include "ghal_2d.h"
 
 /* Test stubs */
 static int g_win_open_calls = 0;

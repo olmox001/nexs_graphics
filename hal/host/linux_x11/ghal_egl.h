@@ -4,7 +4,7 @@
 #define GHAL_EGL_H
 #pragma once
 
-#include "../../include/ghal.h"
+#include "ghal.h"
 
 #ifdef __cplusplus
 extern "C" {

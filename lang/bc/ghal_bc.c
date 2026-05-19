@@ -7,9 +7,9 @@
  * Platform-independent — no platform includes.
  */
 
-#include "../include/ghal_bc.h"
-#include "../include/ghal.h"
-#include "../include/ghal_2d.h"
+#include "ghal_bc.h"
+#include "ghal.h"
+#include "ghal_2d.h"
 
 #include <string.h>
 #include <stdlib.h>

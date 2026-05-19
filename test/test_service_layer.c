@@ -105,7 +105,7 @@ int  reg_ipc_send(const char *p,Value m){(void)p;(void)m;return 0;}
 int  reg_ipc_recv(const char *p,Value *m){(void)p;(void)m;return 0;}
 
 /* draw2d stubs */
-#include "../include/ghal.h"
+#include "ghal.h"
 void draw2d_blit(GHalSurface *d,const GHalSurface *s,int32_t x,int32_t y){
     (void)d;(void)s;(void)x;(void)y;
 }
@@ -117,7 +117,7 @@ void draw2d_fill_rect(GHalSurface *s,int32_t x,int32_t y,int32_t w,int32_t h,uin
 GHalDriver *g_ghal_driver = NULL;
 
 /* ── After stubs: include service header ────────────────────────── */
-#include "../include/ghal_service.h"
+#include "ghal_service.h"
 
 /* ── Test helpers ─────────────────────────────────────────────── */
 static int g_pass = 0, g_fail = 0;

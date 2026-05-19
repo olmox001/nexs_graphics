@@ -7,8 +7,8 @@
 
 #ifdef NEXS_SEL4
 
-#include "../include/ghal.h"
-#include "../include/ghal_ipc.h"
+#include "ghal.h"
+#include "ghal_ipc.h"
 
 #include <string.h>
 

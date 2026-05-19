@@ -4,8 +4,8 @@
  * GALB bytecode for execution via the high-performance GALB VM.
  */
 
-#include "../include/ghal_bc.h"
-#include "../include/ghal.h"
+#include "ghal_bc.h"
+#include "ghal.h"
 
 #include <string.h>
 #include <stdlib.h>

@@ -17,8 +17,8 @@
 #define NEXS_API
 #endif
 
-#include "../include/ghal_image.h"
-#include "../include/ghal_font_ttf.h"
+#include "ghal_image.h"
+#include "ghal_font_ttf.h"
 
 /* ── Test helpers ─────────────────────────────────────────────── */
 static int g_pass = 0, g_fail = 0;

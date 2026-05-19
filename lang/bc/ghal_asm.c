@@ -4,8 +4,8 @@
  * Used by tests and by the compiler back-end in Phase 8.
  */
 
-#include "../include/ghal_bc.h"
-#include "../include/ghal.h"
+#include "ghal_bc.h"
+#include "ghal.h"
 
 #include <string.h>
 #include <stdlib.h>

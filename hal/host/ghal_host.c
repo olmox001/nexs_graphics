@@ -8,8 +8,8 @@
  * to g_ghal_driver function pointers.
  */
 
-#include "../include/ghal.h"
-#include "../include/ghal_compositor.h"
+#include "ghal.h"
+#include "ghal_compositor.h"
 
 #include "nexs_registry.h"
 

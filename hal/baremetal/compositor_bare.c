@@ -7,8 +7,8 @@
 
 #ifdef NEXS_BAREMETAL
 
-#include "../include/ghal_compositor.h"
-#include "../include/ghal.h"
+#include "ghal_compositor.h"
+#include "ghal.h"
 
 /* Single compositor state for baremetal */
 static GCompositor g_compositor = {0};

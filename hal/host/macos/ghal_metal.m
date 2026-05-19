@@ -9,7 +9,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 #import <Foundation/Foundation.h>
 
-#include "../../include/ghal.h"
+#include "ghal.h"
 
 /* ── Blit helper — upload RGBA/BGRA CPU buffer to MTLTexture ─── */
 

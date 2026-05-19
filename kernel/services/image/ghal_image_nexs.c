@@ -28,10 +28,10 @@
 #define NEXS_HAL_H
 #endif
 
-#include "../../include/ghal_image.h"
-#include "../../include/ghal_service.h"
-#include "../../include/ghal.h"
-#include "../../include/ghal_2d.h"
+#include "ghal_image.h"
+#include "ghal_service.h"
+#include "ghal.h"
+#include "ghal_2d.h"
 
 /* NEXS headers — resolved via Makefile -I */
 #include "nexs_fn.h"

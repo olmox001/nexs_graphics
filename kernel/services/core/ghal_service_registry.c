@@ -10,7 +10,7 @@
  * does; the registry just orchestrates the sequencing.
  */
 
-#include "../../include/ghal_service.h"
+#include "ghal_service.h"
 
 /* Full NEXS headers — resolved via Makefile -I flags */
 #include "nexs_fn.h"

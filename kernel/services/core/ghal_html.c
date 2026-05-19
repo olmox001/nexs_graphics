@@ -6,9 +6,9 @@
 
 #include "nexs_registry.h"
 #include "nexs_value.h"
-#include "../../include/ghal.h"
-#include "../../include/ghal_2d.h"
-#include "../../include/ghal_surface.h"
+#include "ghal.h"
+#include "ghal_2d.h"
+#include "ghal_surface.h"
 
 #include <stdio.h>
 #include <stdlib.h>

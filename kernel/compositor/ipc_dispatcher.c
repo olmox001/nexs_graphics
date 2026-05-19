@@ -5,8 +5,8 @@
  * and seL4 (Microkit channels — see sel4/ipc_bridge.c).
  */
 
-#include "../include/ghal_ipc.h"
-#include "../include/ghal_compositor.h"
+#include "ghal_ipc.h"
+#include "ghal_compositor.h"
 
 #include <string.h>
 #include <stdio.h>

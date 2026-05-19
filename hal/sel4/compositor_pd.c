@@ -12,8 +12,8 @@
 
 #ifdef NEXS_SEL4
 
-#include "../include/ghal_compositor.h"
-#include "../include/ghal_ipc.h"
+#include "ghal_compositor.h"
+#include "ghal_ipc.h"
 #include <microkit.h>
 
 #define CH_APP_WIN_REQUEST  1

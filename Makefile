@@ -17,7 +17,10 @@ INCLUDES := \
     -I base-nexs/runtime/include \
     -I base-nexs/compiler/include \
     -I base-nexs/sys/include \
-    -I include \
+    -I hal/include \
+    -I lang/include \
+    -I kernel/include \
+    -I kernel/services/core \
     -I vendor/include
 
 CFLAGS   := -Wall -Wextra -Werror -std=c17 -g -include reimplementation/core/include/nexs_common.h $(INCLUDES) -DNEXS_HOST_TOOL -DHOST_OS_MACOS
@@ -57,39 +60,39 @@ GHAL_SRCS := \
     reimplementation/lang/lexer.c \
     reimplementation/lang/parser.c \
     reimplementation/compiler/dep_scan.c \
-    compositor/compositor.c \
-    compositor/window_registry.c \
-    compositor/ipc_dispatcher.c \
-    host/ghal_host.c \
-    lib/draw2d.c \
-    lib/font.c \
-    bc/ghal_bc.c \
-    bc/ghal_asm.c \
-    bc/ghal_compiler.c \
+    kernel/compositor/compositor.c \
+    kernel/compositor/window_registry.c \
+    kernel/compositor/ipc_dispatcher.c \
+    hal/host/ghal_host.c \
+    hal/common/draw2d.c \
+    hal/common/font.c \
+    lang/bc/ghal_bc.c \
+    lang/bc/ghal_asm.c \
+    lang/bc/ghal_compiler.c \
     lang/ghal_builtins.c \
     lang/ghal_fn_table.c \
-    services/core/ghal_service_registry.c \
-    services/core/ghal_vfs.c \
-    services/core/ghal_html.c \
-    services/image/ghal_image.c \
-    services/image/ghal_image_nexs.c \
-    services/font/ghal_font_ttf.c \
-    services/font/ghal_font_nexs.c
+    kernel/services/core/ghal_service_registry.c \
+    kernel/services/core/ghal_vfs.c \
+    kernel/services/core/ghal_html.c \
+    kernel/services/image/ghal_image.c \
+    kernel/services/image/ghal_image_nexs.c \
+    kernel/services/font/ghal_font_ttf.c \
+    kernel/services/font/ghal_font_nexs.c
 
 # Platform-specific backend
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
-  GHAL_SRCS  += host/macos/ghal_macos.m host/macos/ghal_metal.m
+  GHAL_SRCS  += hal/host/macos/ghal_macos.m hal/host/macos/ghal_metal.m
   LDFLAGS    += -framework Cocoa -framework Metal \
                 -framework QuartzCore -framework Foundation
   CFLAGS     += -fobjc-arc
   OCC         = $(CC)  # clang handles .m natively
-endif
+  endif
 
-ifeq ($(UNAME),Linux)
-  GHAL_SRCS += host/linux_x11/ghal_x11.c host/linux_x11/ghal_egl.c
+  ifeq ($(UNAME),Linux)
+  GHAL_SRCS += hal/host/linux_x11/ghal_x11.c hal/host/linux_x11/ghal_egl.c
   LDFLAGS   += -ldl -lpthread
-endif
+  endif
 
 ALL_SRCS   := $(NEXS_SRCS) $(GHAL_SRCS)
 SRCS_C     := $(filter %.c,$(ALL_SRCS))
@@ -151,15 +154,15 @@ $(TARGET_BIN): $(OBJS) $(EXTRA_OBJS)
 # ── Tests ──────────────────────────────────────────────────────────────────
 TEST_CFLAGS := $(CFLAGS) -DGHAL_TEST_MODE
 
-$(OUTDIR)/test/test_draw2d: test/test_draw2d.c lib/draw2d.c lib/font.c
+$(OUTDIR)/test/test_draw2d: test/test_draw2d.c hal/common/draw2d.c hal/common/font.c
 	@mkdir -p $(OUTDIR)/test
 	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(OUTDIR)/test/test_compositor: test/test_compositor.c compositor/compositor.c compositor/ipc_dispatcher.c
+$(OUTDIR)/test/test_compositor: test/test_compositor.c kernel/compositor/compositor.c kernel/compositor/ipc_dispatcher.c
 	@mkdir -p $(OUTDIR)/test
 	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(OUTDIR)/test/test_galb: test/test_galb.c bc/ghal_bc.c bc/ghal_asm.c bc/ghal_compiler.c
+$(OUTDIR)/test/test_galb: test/test_galb.c lang/bc/ghal_bc.c lang/bc/ghal_asm.c lang/bc/ghal_compiler.c
 	@mkdir -p $(OUTDIR)/test
 	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
 
@@ -183,9 +186,9 @@ verify-includes:
 	@cd base-nexs && git diff --quiet && echo "  OK (no modifications)" || echo "  WARNING: modifications detected"
 	@echo ""
 	@echo "Header syntax check (ghal.h):"
-	@$(CC) $(CFLAGS) -fsyntax-only include/ghal.h 2>&1 || true
+	@$(CC) $(CFLAGS) -fsyntax-only hal/include/ghal.h 2>&1 || true
 	@echo "Header syntax check (ghal_bc.h):"
-	@$(CC) $(CFLAGS) -fsyntax-only include/ghal_bc.h 2>&1 || true
+	@$(CC) $(CFLAGS) -fsyntax-only lang/include/ghal_bc.h 2>&1 || true
 
 # ── Script syntax audit (no GUI needed) ───────────────────────────────────
 # Checks that no banned patterns appear in example scripts.

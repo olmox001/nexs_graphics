@@ -11,7 +11,7 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 
-#include "../../include/ghal.h"
+#include "ghal.h"
 
 /* ── App delegate (hidden; lets NSApp run headless if needed) ── */
 @interface GHalAppDelegate : NSObject <NSApplicationDelegate>

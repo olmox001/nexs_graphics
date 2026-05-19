@@ -17,7 +17,7 @@
 #include "stb_rect_pack.h"
 #include "stb_truetype.h"
 
-#include "../../include/ghal_font_ttf.h"
+#include "ghal_font_ttf.h"
 
 #include <stdlib.h>
 #include <string.h>
