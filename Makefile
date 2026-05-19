@@ -41,6 +41,7 @@ NEXS_SRCS := $(shell find base-nexs -name '*.c' \
     ! -path 'base-nexs/kernel/*' \
     ! -path 'base-nexs/fs/*' \
     ! -path 'base-nexs/runtime/main.c' \
+    ! -path 'base-nexs/runtime/runtime.c' \
     ! -path 'base-nexs/core/utils.c' \
     ! -path 'base-nexs/lang/lexer.c' \
     ! -path 'base-nexs/lang/parser.c' \
@@ -51,6 +52,7 @@ NEXS_SRCS := $(shell find base-nexs -name '*.c' \
 GHAL_SRCS := \
     reimplementation/hal/hal_hosted.c \
     reimplementation/runtime/main.c \
+    reimplementation/runtime/runtime.c \
     reimplementation/core/utils.c \
     reimplementation/lang/lexer.c \
     reimplementation/lang/parser.c \
