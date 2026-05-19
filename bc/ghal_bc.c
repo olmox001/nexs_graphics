@@ -265,6 +265,28 @@ int galb_vm_step(GalbVM *vm) {
         ghal_vsync();
         break;
 
+    /* ── GALO_LOOP_START: R(u8) count(u32) */
+    case GALO_LOOP_START: {
+        uint8_t reg = fetch_u8(vm);
+        uint32_t count = fetch_u32(vm);
+        vm->regs[reg % GALB_MAX_REGS] = count;
+        break;
+    }
+
+    /* ── GALO_LOOP_END: R(u8) target_pc(u32) */
+    case GALO_LOOP_END: {
+        uint8_t reg = fetch_u8(vm);
+        uint32_t target_pc = fetch_u32(vm);
+        int ridx = reg % GALB_MAX_REGS;
+        if (vm->regs[ridx] > 1) {
+            vm->regs[ridx]--;
+            vm->pc = target_pc;
+        } else {
+            vm->regs[ridx] = 0;
+        }
+        break;
+    }
+
     default:
         fprintf(stderr, "GALB: unknown opcode 0x%02X at pc=%u\n",
                 op, vm->pc - 1);

@@ -53,6 +53,10 @@ typedef enum {
     GALO_GPU_SUBMIT   = 0x71,   /* data_str len                 */
     GALO_GPU_END      = 0x72,   /* win_reg                      */
     GALO_GPU_VSYNC    = 0x73,   /* wait for vblank              */
+
+    /* High-performance loop control */
+    GALO_LOOP_START   = 0x80,   /* reg count                    */
+    GALO_LOOP_END     = 0x81,   /* reg target_pc                */
 } GalOpcode;
 
 /* GALB bytecode file header */
@@ -86,6 +90,9 @@ typedef struct {
 int  galb_vm_init(GalbVM *vm, const uint8_t *code, uint32_t len);
 int  galb_vm_step(GalbVM *vm);
 int  galb_vm_run(GalbVM *vm);
+
+/* Compiler API for high-performance .g.nx scripts */
+uint8_t *ghal_compile_g_nx(const char *source, uint32_t *out_len);
 
 #ifdef __cplusplus
 }

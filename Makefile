@@ -5,10 +5,14 @@ OUTDIR   := build/$(TARGET)
 # ── Critical: reimplementation/ FIRST to intercept base-nexs headers ──────
 INCLUDES := \
     -I reimplementation \
+    -I reimplementation/core/include \
+    -I reimplementation/lang \
+    -I reimplementation/lang/include \
     -I base-nexs/hal/include \
     -I base-nexs/include \
     -I base-nexs/core/include \
     -I base-nexs/registry/include \
+    -I base-nexs/lang \
     -I base-nexs/lang/include \
     -I base-nexs/runtime/include \
     -I base-nexs/compiler/include \
@@ -16,8 +20,8 @@ INCLUDES := \
     -I include \
     -I vendor/include
 
-CFLAGS   := -Wall -Wextra -Werror -std=c17 -g $(INCLUDES) -DNEXS_HOST_TOOL -DHOST_OS_MACOS
-CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -g $(INCLUDES)
+CFLAGS   := -Wall -Wextra -Werror -std=c17 -g -include reimplementation/core/include/nexs_common.h $(INCLUDES) -DNEXS_HOST_TOOL -DHOST_OS_MACOS
+CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -g -include reimplementation/core/include/nexs_common.h $(INCLUDES)
 LDFLAGS  :=
 CC       ?= cc
 
@@ -38,6 +42,9 @@ NEXS_SRCS := $(shell find base-nexs -name '*.c' \
     ! -path 'base-nexs/fs/*' \
     ! -path 'base-nexs/runtime/main.c' \
     ! -path 'base-nexs/core/utils.c' \
+    ! -path 'base-nexs/lang/lexer.c' \
+    ! -path 'base-nexs/lang/parser.c' \
+    ! -path 'base-nexs/compiler/dep_scan.c' \
     2>/dev/null)
 
 # GHAL platform-independent sources
@@ -45,6 +52,9 @@ GHAL_SRCS := \
     reimplementation/hal/hal_hosted.c \
     reimplementation/runtime/main.c \
     reimplementation/core/utils.c \
+    reimplementation/lang/lexer.c \
+    reimplementation/lang/parser.c \
+    reimplementation/compiler/dep_scan.c \
     compositor/compositor.c \
     compositor/window_registry.c \
     compositor/ipc_dispatcher.c \
@@ -53,10 +63,12 @@ GHAL_SRCS := \
     lib/font.c \
     bc/ghal_bc.c \
     bc/ghal_asm.c \
+    bc/ghal_compiler.c \
     lang/ghal_builtins.c \
     lang/ghal_fn_table.c \
     services/core/ghal_service_registry.c \
     services/core/ghal_vfs.c \
+    services/core/ghal_html.c \
     services/image/ghal_image.c \
     services/image/ghal_image_nexs.c \
     services/font/ghal_font_ttf.c \
@@ -112,8 +124,26 @@ $(OUTDIR)/%.o: %.m | $(OUTDIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET_BIN): $(OBJS)
+# If EMBED_SCRIPT is specified, we bootstrap compile and link the embedded script
+EXTRA_OBJS :=
+ifneq ($(EMBED_SCRIPT),)
+EXTRA_OBJS += $(OUTDIR)/ghal_embed.o
+endif
+
+$(OUTDIR)/ghal_bootstrap: $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $@
+
+$(OUTDIR)/ghal_embed.c: $(EMBED_SCRIPT) $(OUTDIR)/ghal_bootstrap
+	$(OUTDIR)/ghal_bootstrap --codegen $(EMBED_SCRIPT) -o $@ --hosted
+	@sed 's/static const char nexs_script_src/const char nexs_script_src/g' $@ > $@.tmp
+	@sed 's/int main(/int duplicate_main(/g' $@.tmp > $@
+	@rm -f $@.tmp
+
+$(OUTDIR)/ghal_embed.o: $(OUTDIR)/ghal_embed.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET_BIN): $(OBJS) $(EXTRA_OBJS)
+	$(CC) $(OBJS) $(EXTRA_OBJS) $(LDFLAGS) -o $@
 	@echo "Built: $(TARGET_BIN)"
 
 # ── Tests ──────────────────────────────────────────────────────────────────
@@ -127,7 +157,7 @@ $(OUTDIR)/test/test_compositor: test/test_compositor.c compositor/compositor.c c
 	@mkdir -p $(OUTDIR)/test
 	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(OUTDIR)/test/test_galb: test/test_galb.c bc/ghal_bc.c bc/ghal_asm.c
+$(OUTDIR)/test/test_galb: test/test_galb.c bc/ghal_bc.c bc/ghal_asm.c bc/ghal_compiler.c
 	@mkdir -p $(OUTDIR)/test
 	$(CC) $(TEST_CFLAGS) $^ $(LDFLAGS) -o $@
 

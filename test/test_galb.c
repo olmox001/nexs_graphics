@@ -193,6 +193,47 @@ static void test_vm_window(void) {
     EXPECT(g_win_open_calls == 1, "win_open called");
 }
 
+static void test_g_nx_compiler(void) {
+    printf("test_g_nx_compiler:\n");
+    const char *script =
+        "win_open(\"Test Compile\", 640, 480)\n"
+        "loop 5 {\n"
+        "    draw_clear(572667391)\n"
+        "    draw_rect(10, 20, 100, 200, 4282747135)\n"
+        "    draw_text(30, 40, \"Compiled Text\", 4294967295)\n"
+        "    surface_blit()\n"
+        "    vsync()\n"
+        "}\n"
+        "win_close()\n";
+
+    g_win_open_calls = 0;
+    g_surf_create_calls = 0;
+    g_draw_rect_calls = 0;
+
+    uint32_t len = 0;
+    uint8_t *code = ghal_compile_g_nx(script, &len);
+    EXPECT(code != NULL, "ghal_compile_g_nx returns non-NULL");
+    EXPECT(len > 0, "compiled code length > 0");
+
+    printf("  --- compiled disassembly ---\n");
+    galb_disasm(code, len);
+    printf("  --- end ---\n");
+
+    GalbVM vm;
+    int rc_init = galb_vm_init(&vm, code, len);
+    EXPECT(rc_init == 0, "VM init of compiled code succeeds");
+
+    int rc_run = galb_vm_run(&vm);
+    EXPECT(rc_run == 0, "VM execution of compiled code succeeds");
+    EXPECT(vm.halted == 1, "VM reaches halt state");
+    
+    EXPECT(g_win_open_calls == 1, "win_open called once");
+    EXPECT(g_surf_create_calls == 1, "surf_create called once");
+    EXPECT(g_draw_rect_calls == 5, "draw_rect called 5 times inside the compiled loop");
+
+    free(code);
+}
+
 int main(void) {
     printf("=== GHAL GALB VM unit tests ===\n");
     test_asm_disasm();
@@ -200,6 +241,7 @@ int main(void) {
     test_vm_halt();
     test_vm_draw();
     test_vm_window();
+    test_g_nx_compiler();
     printf("\n%d passed, %d failed\n", g_pass, g_fail);
     return (g_fail > 0) ? 1 : 0;
 }

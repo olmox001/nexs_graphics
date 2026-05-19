@@ -190,7 +190,22 @@ int ghal_gpu_end_frame(GHalWindow *w) {
 }
 
 uint32_t ghal_vsync(void) {
+    if (s_compositor_ready) {
+        gcomp_tick(&s_compositor);
+        return s_compositor.last_vsync_us;
+    }
     if (g_ghal_driver && g_ghal_driver->vsync)
         return g_ghal_driver->vsync();
     return 16667;  /* default 60 Hz */
 }
+
+void ghal_win_close_by_id(uint32_t id) {
+    if (s_compositor_ready) {
+        gcomp_win_unregister(&s_compositor, id);
+    }
+}
+
+int ghal_has_active_windows(void) {
+    return s_compositor_ready && s_compositor.count > 0;
+}
+

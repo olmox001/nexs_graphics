@@ -21,7 +21,9 @@
  *   /dev/img/<id>/surface int  (uintptr_t of GHalSurface*)
  */
 
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 #ifndef NEXS_HAL_H
 #define NEXS_HAL_H
 #endif

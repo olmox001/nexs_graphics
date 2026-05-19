@@ -10,6 +10,10 @@
 #include "../include/ghal_2d.h"
 #include "include/compositor_internal.h"
 
+/* Resolved via -I base-nexs/lang/include */
+#include "nexs_value.h"
+#include "nexs_registry.h"
+
 #include <string.h>
 #include <stdio.h>
 
@@ -19,6 +23,8 @@ extern void winreg_set_str(const char *path, const char *val);
 extern void gcomp_publish_registry(GHalWindow *w);
 extern void gcomp_update_registry(GHalWindow *w);
 extern int  reg_delete(const char *path);
+
+extern void ghal_layout_render(GHalWindow *w);
 
 /* ── Compositor init/shutdown ───────────────────────────────── */
 
@@ -52,6 +58,18 @@ int gcomp_tick(GCompositor *c) {
     for (int i = 0; i < c->count; i++) {
         if (c->damage_flags[i] && c->wins[i].surface) {
             GHalWindow *w = &c->wins[i];
+
+            /* Check if window has a VFS HTML layout tree registered */
+            char layout_tag_path[256];
+            snprintf(layout_tag_path, sizeof(layout_tag_path), "/dev/win/%u/layout/tag", w->id);
+            Value tag_val = reg_get(layout_tag_path);
+            if (tag_val.type == TYPE_STR && tag_val.data) {
+                ghal_surface_lock(w->surface);
+                ghal_layout_render(w);
+                ghal_surface_unlock(w->surface);
+            }
+            val_free(&tag_val);
+
             if (g_ghal_driver->surface_present)
                 g_ghal_driver->surface_present(w, w->surface);
             c->damage_flags[i] = 0;

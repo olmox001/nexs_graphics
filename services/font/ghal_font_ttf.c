@@ -7,7 +7,9 @@
 
 #define STB_RECT_PACK_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 #ifndef NEXS_HAL_H
 #define NEXS_HAL_H
 #endif

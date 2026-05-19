@@ -173,6 +173,8 @@ void galb_disasm(const uint8_t *code, uint32_t len) {
         case GALO_GPU_SUBMIT:   printf("GPU_SUBMIT\n"); pc += 1; break;
         case GALO_GPU_END:      printf("GPU_END\n"); pc += 1; break;
         case GALO_GPU_VSYNC:    printf("GPU_VSYNC\n"); break;
+        case GALO_LOOP_START:   printf("LOOP_START\n"); pc += 1+4; break;
+        case GALO_LOOP_END:     printf("LOOP_END\n"); pc += 1+4; break;
         default:
             if (op == 0xFF) { printf("HALT\n"); return; }
             printf("UNKNOWN(0x%02X)\n", op);

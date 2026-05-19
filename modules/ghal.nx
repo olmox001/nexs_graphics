@@ -1,0 +1,6 @@
+library "ghal"
+
+# modules/ghal.nx — GHAL Graphics Module
+# Auto-loaded or explicitly importable via import("ghal").
+
+kout("[ghal] Graphics module loaded.")

@@ -1,0 +1,248 @@
+/*
+ * compiler/dep_scan.c — NEXS Dependency Scanner (Reimplemented with .g.nx support)
+ * ==============================================================================
+ * Recursively scans a .nx or .g.nx source file for exec("path") calls and collects
+ * all unique dependency paths needed for a self-contained standalone binary.
+ */
+
+#include "nexs_compiler.h"
+#include "nexs_utils.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#ifndef NEXS_BAREMETAL
+#include <dirent.h>
+#include <sys/stat.h>
+#endif
+
+/* =========================================================
+   INTERNAL HELPERS
+   ========================================================= */
+
+/* Check whether path already exists in the dep list */
+static int dep_already_seen(NexsDepEntry *deps, int count, const char *path) {
+    for (int i = 0; i < count; i++) {
+        if (strcmp(deps[i].path, path) == 0) return 1;
+    }
+    return 0;
+}
+
+/* Read an entire file into a malloc'd buffer; caller must free() it.
+ * Returns NULL on error. */
+static char *dep_read_file(const char *path) {
+    FILE *f = fopen(path, "r");
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    if (sz <= 0) { fclose(f); return calloc(1, 1); }
+    fseek(f, 0, SEEK_SET);
+    char *buf = malloc((size_t)sz + 1);
+    if (!buf) { fclose(f); return NULL; }
+    size_t rd = fread(buf, 1, (size_t)sz, f);
+    buf[rd] = '\0';
+    fclose(f);
+    return buf;
+}
+
+/* =========================================================
+   RECURSIVE SCANNER
+   ========================================================= */
+
+static int scan_source(const char *src_path, const char *src,
+                        NexsDepEntry *deps, int count, int max_deps) {
+    if (!src || !src_path) return count;
+
+    char parent_dir[NEXS_DEP_PATH_MAX];
+    nexs_path_dirname(src_path, parent_dir, sizeof(parent_dir));
+
+    const char *p = src;
+    while (*p) {
+        /* Skip comments (# to end of line) */
+        if (*p == '#') {
+            while (*p && *p != '\n') p++;
+            continue;
+        }
+
+        /*
+         * Look for exec( or import( without requiring whitespace.
+         */
+        const char *keyword = NULL;
+        if (strncmp(p, "exec", 4) == 0) keyword = "exec";
+        else if (strncmp(p, "import", 6) == 0) keyword = "import";
+
+        if (keyword) {
+            size_t kw_len = strlen(keyword);
+            const char *after_exec = p + kw_len;
+            /* Skip optional whitespace between keyword and ( or " */
+            while (*after_exec == ' ' || *after_exec == '\t') after_exec++;
+            
+            if (*after_exec == '(' || *after_exec == '"' || *after_exec == '\'') {
+                int has_paren = (*after_exec == '(');
+                if (has_paren) {
+                    after_exec++;
+                    while (*after_exec == ' ' || *after_exec == '\t') after_exec++;
+                }
+
+                /* Expect a string literal */
+                char quote = *after_exec;
+                if (quote == '"' || quote == '\'') {
+                    after_exec++; /* skip opening quote */
+                    const char *start = after_exec;
+                    while (*after_exec && *after_exec != quote && *after_exec != '\n')
+                        after_exec++;
+                    if (*after_exec == quote) {
+                        size_t len = (size_t)(after_exec - start);
+                        if (len > 0 && len < NEXS_DEP_PATH_MAX - 1) {
+                            char rel_path[NEXS_DEP_PATH_MAX];
+                            char abs_path[NEXS_DEP_PATH_MAX];
+                            strncpy(rel_path, start, len);
+                            rel_path[len] = '\0';
+
+                            if (rel_path[0] == '/') {
+                                strncpy(abs_path, rel_path, NEXS_DEP_PATH_MAX - 1);
+                                abs_path[NEXS_DEP_PATH_MAX - 1] = '\0';
+                            } else {
+                                /* Try CWD-relative first */
+                                strncpy(abs_path, rel_path, NEXS_DEP_PATH_MAX - 1);
+                                abs_path[NEXS_DEP_PATH_MAX - 1] = '\0';
+                                /* If not readable, try parent-dir-relative */
+                                FILE *probe = fopen(abs_path, "r");
+                                if (!probe) {
+                                    char alt[NEXS_DEP_PATH_MAX];
+
+                                    /* 1. Try parent-dir-relative */
+                                    nexs_path_join(alt, sizeof(alt), parent_dir, rel_path, NULL);
+                                    probe = fopen(alt, "r");
+                                    if (probe) {
+                                        strncpy(abs_path, alt, NEXS_DEP_PATH_MAX - 1);
+                                    } else {
+                                        /* 2. Try global paths */
+                                        const char *global_dirs[] = {
+                                            "services", "/usr/local/share/nexs/services",
+                                            "modules", "/usr/local/share/nexs/modules"
+                                        };
+                                        for (int i = 0; i < 4; i++) {
+                                            snprintf(alt, sizeof(alt), "%s/%s", global_dirs[i], rel_path);
+                                            probe = fopen(alt, "r");
+                                            if (probe) {
+                                                strncpy(abs_path, alt, NEXS_DEP_PATH_MAX - 1);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (probe) {
+                                    fclose(probe);
+                                }
+                            }
+
+                            if (!dep_already_seen(deps, count, abs_path)) {
+                                if (count < max_deps) {
+                                    strncpy(deps[count].path, abs_path,
+                                            NEXS_DEP_PATH_MAX - 1);
+                                    deps[count].path[NEXS_DEP_PATH_MAX - 1] = '\0';
+                                    deps[count].src = NULL; /* filled later */
+                                    count++;
+
+                                    /* Recurse into the dependency */
+                                    char *dep_src = dep_read_file(abs_path);
+                                    if (dep_src) {
+                                        count = scan_source(abs_path, dep_src,
+                                                            deps, count, max_deps);
+                                        free(dep_src);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                p = after_exec;
+                continue;
+            }
+        }
+        p++;
+    }
+    return count;
+}
+
+/* =========================================================
+   PUBLIC API
+   ========================================================= */
+
+int nexs_scan_deps(const char *src_path,
+                   NexsDepEntry *deps,
+                   int max_deps) {
+    if (!src_path || !deps || max_deps <= 0) return 0;
+
+    char *src = dep_read_file(src_path);
+    if (!src) return 0;
+
+    int count = scan_source(src_path, src, deps, 0, max_deps);
+    free(src);
+
+    /* Fill in .src for each discovered dep */
+    for (int i = 0; i < count; i++) {
+        if (!deps[i].src) {
+            deps[i].src = dep_read_file(deps[i].path);
+        }
+    }
+
+    return count;
+}
+
+void nexs_free_deps(NexsDepEntry *deps, int count) {
+  if (!deps)
+    return;
+  for (int i = 0; i < count; i++) {
+    if (deps[i].src) {
+      free(deps[i].src);
+      deps[i].src = NULL;
+    }
+  }
+}
+
+#ifndef NEXS_BAREMETAL
+int nexs_scan_directory(const char *dir_path, NexsDepEntry *deps, int count, int max_deps) {
+  DIR *d = opendir(dir_path);
+  if (!d) return count;
+
+  struct dirent *ent;
+  while ((ent = readdir(d)) != NULL) {
+    if (ent->d_name[0] == '.') continue;
+
+    char path[NEXS_DEP_PATH_MAX];
+    snprintf(path, sizeof(path), "%s/%s", dir_path, ent->d_name);
+
+    struct stat st;
+    if (stat(path, &st) == 0) {
+      if (S_ISDIR(st.st_mode)) {
+        count = nexs_scan_directory(path, deps, count, max_deps);
+      } else {
+        size_t nlen = strlen(ent->d_name);
+        int is_nx = (nlen > 3 && strcmp(ent->d_name + nlen - 3, ".nx") == 0);
+        int is_gnx = (nlen > 5 && strcmp(ent->d_name + nlen - 5, ".g.nx") == 0);
+        if (is_nx || is_gnx) {
+          if (!dep_already_seen(deps, count, path)) {
+            if (count < max_deps) {
+              strncpy(deps[count].path, path, NEXS_DEP_PATH_MAX - 1);
+              deps[count].path[NEXS_DEP_PATH_MAX - 1] = '\0';
+              deps[count].src = dep_read_file(path);
+              count++;
+            }
+          }
+        }
+      }
+    }
+  }
+  closedir(d);
+  return count;
+}
+#else
+int nexs_scan_directory(const char *dir_path, NexsDepEntry *deps, int count, int max_deps) {
+  (void)dir_path; (void)deps; (void)max_deps;
+  return count;
+}
+#endif

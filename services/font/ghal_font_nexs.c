@@ -20,7 +20,9 @@
  *   /dev/font/<id>/handle      int  (uintptr_t of GhalFontTTF*)
  */
 
+#ifndef NEXS_API
 #define NEXS_API
+#endif
 #ifndef NEXS_HAL_H
 #define NEXS_HAL_H
 #endif

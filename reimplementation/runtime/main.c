@@ -23,6 +23,7 @@
 #include "nexs_fn.h"
 #include "nexs_registry.h"
 #include "nexs_sys.h"
+#include "ghal_bc.h"
 
 /* builtins_register_all is declared in lang/builtins.c — forward declare here
  */
@@ -290,6 +291,8 @@ __attribute__((weak)) void nexs_main_baremetal(void) {
    MAIN
    ========================================================= */
 
+const char nexs_script_src[] __attribute__((weak)) = "";
+
 #ifdef NEXS_HOST_TOOL
 int main(int argc, char *argv[]) {
   nexs_runtime_init();
@@ -297,6 +300,28 @@ int main(int argc, char *argv[]) {
 
   if (argc == 1) {
     nexs_runtime_autoload();
+    if (nexs_script_src && nexs_script_src[0]) {
+      /* If nexs_script_src starts with GALB magic, compile and run via GALB VM */
+      if (strncmp(nexs_script_src, "GALB", 4) == 0) {
+        GalbVM vm;
+        if (galb_vm_init(&vm, (const uint8_t *)nexs_script_src, strlen(nexs_script_src)) == 0) {
+          int rc = galb_vm_run(&vm);
+          return rc == 0 ? 0 : 1;
+        }
+      }
+      EvalCtx ctx;
+      eval_ctx_init(&ctx);
+      EvalResult r = eval_str(&ctx, nexs_script_src);
+      if (r.sig == CTRL_ERR) {
+        fprintf(stderr, "\033[1;31m[ERR]\033[0m ");
+        val_print(&r.ret_val, stderr);
+        fprintf(stderr, "\n");
+        val_free(&r.ret_val);
+        return 1;
+      }
+      val_free(&r.ret_val);
+      return 0;
+    }
     nexs_repl();
     return 0;
   }
@@ -441,21 +466,83 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  /* <file.nx> */
+  /* <file.nx> or <file.g.nx> */
   if (argc == 2) {
     nexs_runtime_autoload();
-    EvalCtx ctx;
-    eval_ctx_init(&ctx);
-    EvalResult r = eval_file(&ctx, argv[1]);
-    if (r.sig == CTRL_ERR) {
-      fprintf(stderr, "\033[1;31m[ERR]\033[0m ");
-      val_print(&r.ret_val, stderr);
-      fprintf(stderr, "\n");
+    const char *filename = argv[1];
+    size_t flen = strlen(filename);
+
+    if (flen > 5 && strcmp(filename + flen - 5, ".g.nx") == 0) {
+      /* Compile and run via GALB VM */
+      FILE *f = fopen(filename, "rb");
+      if (!f) {
+        fprintf(stderr, "Cannot open source file '%s'\n", filename);
+        return 1;
+      }
+      fseek(f, 0, SEEK_END);
+      long sz = ftell(f);
+      fseek(f, 0, SEEK_SET);
+      if (sz < 0) {
+        fclose(f);
+        return 1;
+      }
+      char *src = malloc((size_t)sz + 1);
+      if (!src) {
+        fclose(f);
+        return 1;
+      }
+      size_t rd = fread(src, 1, (size_t)sz, f);
+      src[rd] = '\0';
+      fclose(f);
+
+      uint32_t code_len = 0;
+      uint8_t *bytecode = ghal_compile_g_nx(src, &code_len);
+      free(src);
+
+      if (!bytecode || code_len == 0) {
+        fprintf(stderr, "Compilation of '%s' failed.\n", filename);
+        return 1;
+      }
+
+      GalbVM vm;
+      if (galb_vm_init(&vm, bytecode, code_len) != 0) {
+        fprintf(stderr, "VM initialization failed\n");
+        free(bytecode);
+        return 1;
+      }
+
+      int rc = galb_vm_run(&vm);
+      free(bytecode);
+
+      extern int ghal_has_active_windows(void);
+      extern uint32_t ghal_vsync(void);
+      while (ghal_has_active_windows()) {
+          ghal_vsync();
+      }
+
+      return rc == 0 ? 0 : 1;
+    } else {
+      /* Normal NEXS execution path */
+      EvalCtx ctx;
+      eval_ctx_init(&ctx);
+      EvalResult r = eval_file(&ctx, filename);
+      if (r.sig == CTRL_ERR) {
+        fprintf(stderr, "\033[1;31m[ERR]\033[0m ");
+        val_print(&r.ret_val, stderr);
+        fprintf(stderr, "\n");
+        val_free(&r.ret_val);
+        return 1;
+      }
       val_free(&r.ret_val);
-      return 1;
+
+      extern int ghal_has_active_windows(void);
+      extern uint32_t ghal_vsync(void);
+      while (ghal_has_active_windows()) {
+          ghal_vsync();
+      }
+
+      return 0;
     }
-    val_free(&r.ret_val);
-    return 0;
   }
 
   fprintf(stderr, "Usage: nexs [file.nx]\n");

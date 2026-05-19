@@ -26,7 +26,8 @@ surface_blit(win3)
 
 # Run for 5 seconds
 i = 0
-while i < 300 {
+loop {
+    if i >= 300 { break }
     vsync()
     i = i + 1
 }

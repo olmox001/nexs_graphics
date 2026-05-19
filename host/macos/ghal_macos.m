@@ -34,10 +34,10 @@
 
 - (BOOL)windowShouldClose:(id)sender {
     (void)sender;
-    /* Signal window close through registry */
-    char path[80];
-    snprintf(path, sizeof(path), "/dev/win/%u/damage", self.ghal_id);
-    return NO;  /* Compositor handles cleanup */
+    /* Unregister window from compositor to handle cleanup */
+    extern void ghal_win_close_by_id(uint32_t id);
+    ghal_win_close_by_id(self.ghal_id);
+    return YES;  /* Allow window to close naturally */
 }
 
 - (void)windowDidResize:(NSNotification *)notification {
@@ -207,9 +207,15 @@ static void macos_surface_present(GHalWindow *w, GHalSurface *s) {
         if (!drawable) return;
 
         id<MTLTexture> tex = drawable.texture;
+        if (!tex) return;
 
-        /* Upload CPU pixels to Metal texture region */
-        MTLRegion region = MTLRegionMake2D(0, 0, s->width, s->height);
+        /* Upload CPU pixels to Metal texture region (clamped to actual texture size to prevent out-of-bounds crash) */
+        NSUInteger tw = tex.width;
+        NSUInteger th = tex.height;
+        NSUInteger bw = (s->width < tw) ? s->width : tw;
+        NSUInteger bh = (s->height < th) ? s->height : th;
+        MTLRegion region = MTLRegionMake2D(0, 0, bw, bh);
+
         [tex replaceRegion:region
               mipmapLevel:0
                 withBytes:s->pixels
