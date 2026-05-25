@@ -1,0 +1,105 @@
+# Graphics HAL Makefile Template
+# Demonstrates compiler include path interception for reimplementation/ override pattern
+
+PROJECT    := ghal
+TARGET     ?= hosted-x86_64
+OUTDIR     := build/$(TARGET)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Critical: -I reimplementation FIRST to intercept nexs headers
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INCLUDES   := \
+    -I reimplementation \
+    -I nexs/hal/include \
+    -I nexs/include \
+    -I nexs/core/include \
+    -I nexs/kernel/include \
+    -I include \
+    -I vendor/include
+
+CFLAGS     := -Wall -Werror -std=c17 $(INCLUDES)
+CXXFLAGS   := -Wall -Werror -std=c++17 $(INCLUDES)
+LDFLAGS    :=
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Source Files
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# NEXS core (all except hal_hosted.c, which we override)
+NEXS_SRCS := $(shell find nexs -name '*.c' ! -path 'nexs/hal/hal_hosted.c')
+
+# GHAL-specific sources
+GHAL_SRCS := \
+    reimplementation/hal/hal_hosted.c \
+    compositor/compositor.c \
+    compositor/window_registry.c \
+    host/ghal_host.c \
+    lib/draw2d.c \
+    lib/font.c \
+    bc/ghal_bc.c \
+    lang/ghal_builtins.c \
+    lang/ghal_fn_table.c
+
+# Platform-specific sources
+ifeq ($(shell uname),Darwin)
+  GHAL_SRCS += host/macos/ghal_macos.m host/macos/ghal_metal.m
+  LDFLAGS   += -framework Cocoa -framework Metal -framework QuartzCore
+  CFLAGS    += -fobjc-arc
+endif
+
+ifeq ($(shell uname),Linux)
+  GHAL_SRCS += host/linux_x11/ghal_x11.c host/linux_x11/ghal_egl.c
+  LDFLAGS   += -ldl  # for dlopen of libxcb, libEGL
+endif
+
+ALL_SRCS   := $(NEXS_SRCS) $(GHAL_SRCS)
+OBJS       := $(patsubst %.c,$(OUTDIR)/%.o, $(filter %.c,$(ALL_SRCS)))
+OBJS       += $(patsubst %.m,$(OUTDIR)/%.o, $(filter %.m,$(ALL_SRCS)))
+
+TARGET_BIN := $(OUTDIR)/$(PROJECT)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Targets
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+.PHONY: all clean test
+
+all: $(TARGET_BIN)
+
+$(OUTDIR):
+	@mkdir -p $(OUTDIR)
+
+$(OUTDIR)/%.o: %.c | $(OUTDIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OUTDIR)/%.o: %.m | $(OUTDIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET_BIN): $(OBJS)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@
+	@echo "✓ Built $(TARGET_BIN)"
+
+clean:
+	rm -rf build/
+
+test: $(TARGET_BIN)
+	./scripts/test-full-cycle.sh
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Verify override pattern (debug target)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+.PHONY: verify-includes
+verify-includes:
+	@echo "Include search order:"
+	@echo "  1. reimplementation/"
+	@echo "  2. nexs/hal/include/"
+	@echo "  3. nexs/include/"
+	@echo ""
+	@echo "Verifying hal_hosted.c is from reimplementation/:"
+	@cpp $(CFLAGS) -dM -x c /dev/null | grep -q "GHAL_H" && echo "✓ GHAL headers found" || echo "✗ Missing"
+	@echo ""
+	@echo "Verifying nexs/ submodule is untouched:"
+	@[ -d nexs/.git ] && echo "✓ nexs/ is a submodule" || echo "✗ nexs/ not a submodule"

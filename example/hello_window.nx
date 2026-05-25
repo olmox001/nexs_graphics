@@ -1,0 +1,25 @@
+# hello_window.nx — Basic GHAL graphics demo
+# Open a window, draw some rectangles and text, present, then close.
+
+win = win_open("Hello GHAL" 800 600)
+if win < 0 {
+    out "ERROR: could not open window"
+    ret
+}
+
+# Dark background
+draw_clear(win 0x222222FF)
+
+# Pink rectangle
+draw_rect(win 100 100 200 150 0xFF4488FF)
+
+# Green border
+draw_rect(win 50 50 700 500 0x00FF44FF)
+draw_rect(win 55 55 690 490 0x222222FF)
+
+# White text
+draw_text(win 110 170 "Hello GHAL!" 0xFFFFFFFF)
+draw_text(win 110 190 "Phase 0-5 complete" 0xCCCCCCFF)
+
+# Present — runtime keeps window alive until user closes it
+surface_blit(win)

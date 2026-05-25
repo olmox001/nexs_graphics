@@ -1,0 +1,29 @@
+# hello_persistent.nx — Persistent GHAL window demo
+# Open a window, draw, present, and rely on the keep-alive event loop.
+
+win = win_open("Persistent GHAL Window" 800 600)
+if win < 0 {
+    out "ERROR: could not open window"
+    ret
+}
+
+# Clear background
+draw_clear(win 0x1A1A24FF)
+
+# Draw an outer glowing border
+draw_rect(win 10 10 780 580 0x8844FFFF)
+draw_rect(win 14 14 772 572 0x1A1A24FF)
+
+# Draw some nice shapes
+draw_rect(win 100 150 200 150 0x00A0FFFF)
+draw_rect(win 400 150 300 200 0xFF5500FF)
+
+# White text
+draw_text(win 50 50 "Persistent GHAL Window" 0xFFFFFFFF)
+draw_text(win 50 80 "This window is kept alive by the host runner's native event loop." 0xBBBBBBFF)
+draw_text(win 50 110 "Click the window's close button to exit gracefully." 0x999999FF)
+
+# Present
+surface_blit(win)
+
+out "Script execution finished! Entering runtime event loop..."

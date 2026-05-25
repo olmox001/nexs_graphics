@@ -1,0 +1,6 @@
+library "ghal"
+
+# services/ui/ghal.nx — GHAL Graphics Service Library
+# Exposes and registers the premium Graphics Hardware Abstraction Layer.
+
+kout("[ghal] Graphics hardware abstraction layer library loaded.")

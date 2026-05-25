@@ -1,0 +1,38 @@
+# compositor_demo.nx — Multiple overlapping windows demo
+# Demonstrates the compositor managing Z-order and damage tracking.
+
+win1 = win_open("Window 1" 400 300)
+win2 = win_open("Window 2" 400 300)
+win3 = win_open("Window 3" 400 300)
+
+if win1 < 0 { out "error win1"; ret }
+if win2 < 0 { out "error win2"; ret }
+if win3 < 0 { out "error win3"; ret }
+
+# Window 1: red
+draw_clear(win1 0xAA0000FF)
+draw_text(win1 10 10 "Window 1 (back)" 0xFFFFFFFF)
+surface_blit(win1)
+
+# Window 2: green
+draw_clear(win2 0x00AA00FF)
+draw_text(win2 10 10 "Window 2 (middle)" 0xFFFFFFFF)
+surface_blit(win2)
+
+# Window 3: blue
+draw_clear(win3 0x0000AAFF)
+draw_text(win3 10 10 "Window 3 (front)" 0xFFFFFFFF)
+surface_blit(win3)
+
+# Run for 5 seconds
+i = 0
+loop {
+    if i >= 300 { break }
+    vsync()
+    i = i + 1
+}
+
+win_close(win3)
+win_close(win2)
+win_close(win1)
+out "Compositor demo done"

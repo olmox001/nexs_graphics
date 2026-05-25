@@ -1,0 +1,34 @@
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Build and Compilation Outputs
+build/
+bin/
+out/
+*.o
+*.a
+*.so
+*.dylib
+*.dSYM/
+nexs_dbg.dSYM/
+*.img
+*.iso
+
+# Local/IDE Configurations
+.vscode/
+.idea/
+.claude/
+.old/
+
+# Scripts & Python Environment
+*.venv/
+venv/
+env/
+__pycache__/
+.pytest_cache/
+
+# Test output and Scratch pads
+test_out.txt
+scratch/
+temp/

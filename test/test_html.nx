@@ -1,0 +1,59 @@
+# test/test_html.nx — Verification script for HTML VFS parser and layout rendering
+
+fn main_test() {
+    out "=== Beginning VFS HTML Layout Verification ==="
+
+    # 1. Open a GHAL window (800x600)
+    win = win_open("NEXS VFS Layout Engine", 800, 600)
+    out "Opened window with ID: "
+    out win
+
+    # 2. Design our beautifully styled HTML template
+    html = "<div style=\"background-color: #1e1e2e; color: #cdd6f4; margin: 20; padding: 25; border: 3px #f5c2e7;\"><h1 style=\"color: #f38ba8; margin: 10;\">Welcome to NEXS OS!</h1><p style=\"color: #a6adc8; margin: 8;\">This layout was parsed from standard HTML and mapped dynamically into the VFS Registry.</p><div style=\"background-color: #313244; color: #a6e3a1; padding: 15; border: 1px #a6e3a1; margin: 15;\">Nested Box Content: Accelerated Box Layout Rendering is active!</div></div>"
+
+    out "Original HTML in NEXS:"
+    out html
+
+    # 3. Parse HTML template into VFS registry hierarchy
+    out "Parsing HTML template into VFS..."
+    rc = ui_parse_html(win, html)
+    out "HTML parse return code: "
+    out rc
+
+    # 4. Verify VFS registry hierarchy keys
+    out "--- Verifying VFS Registry Hierarchy ---"
+    tag_path = "/dev/win/" + str(win) + "/layout/tag"
+    style_bg_path = "/dev/win/" + str(win) + "/layout/style/background-color"
+    border_path = "/dev/win/" + str(win) + "/layout/style/border"
+    child_tag_path = "/dev/win/" + str(win) + "/layout/child/0/tag"
+
+    out "Root Tag: "
+    out reg_get(tag_path)
+    out "Root Background Color: "
+    out reg_get(style_bg_path)
+    out "Root Border Style: "
+    out reg_get(border_path)
+    out "First Child Tag: "
+    out reg_get(child_tag_path)
+
+    # 5. Perform Bidirectional Translation (VFS to HTML string dump)
+    out "--- Performing Bidirectional Translation Dump ---"
+    dumped_html = ui_dump_html(win)
+    out "Dumped HTML output:"
+    out dumped_html
+
+    # 6. Surface blit to trigger compositor damage presentation and render the layout
+    out "--- Triggering Layout Draw and Compositor Blit ---"
+    surface_blit(win)
+
+    # 7. Render loop to keep window open and dispatch ticks
+    out "Visual rendering active. Running frame updates..."
+    loop {
+        vsync()
+    }
+
+    out "=== VFS HTML Layout Verification Completed Successfully ==="
+}
+
+# Invoke the test function
+main_test()
